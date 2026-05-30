@@ -1,0 +1,30 @@
+Admin
+
+• Login: admin@plataforma.com
+
+• Password/PIN: admin123
+
+Mayorista
+
+• Login: lopez@demo.com
+
+• Password/PIN: demo123
+
+Mayorista
+
+• Login: andinas@demo.com
+
+• Password/PIN: demo123
+
+Tienda
+
+• Login: 0991111111
+
+• Password/PIN: 1234
+
+Vendedor
+
+• Login: carlos@lopez.com
+
+• Password/PIN: vendedor123
+
