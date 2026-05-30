@@ -1,0 +1,21 @@
+\babel@toc {spanish}{}\relax 
+\contentsline {section}{\numberline {1}Capítulo 1}{2}{section.1}%
+\contentsline {subsection}{\numberline {1.1}Introducción}{2}{subsection.1.1}%
+\contentsline {subsection}{\numberline {1.2}Problemática}{2}{subsection.1.2}%
+\contentsline {subsection}{\numberline {1.3}Metodología o estrategia de desarrollo}{2}{subsection.1.3}%
+\contentsline {section}{\numberline {2}Capítulo 2: Planificación y análisis}{3}{section.2}%
+\contentsline {subsection}{\numberline {2.1}Análisis}{3}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}Requisitos funcionales}{4}{subsection.2.2}%
+\contentsline {subsection}{\numberline {2.3}Requisitos no funcionales}{5}{subsection.2.3}%
+\contentsline {subsection}{\numberline {2.4}Historias de Usuario / Casos de Uso}{5}{subsection.2.4}%
+\contentsline {subsection}{\numberline {2.5}Sprint}{7}{subsection.2.5}%
+\contentsline {subsection}{\numberline {2.6}Diagramas: Clases y BD (diseño lógico) -- Preguntas y respuesta al diagrama}{7}{subsection.2.6}%
+\contentsline {subsection}{\numberline {2.7}Diagrama de componentes}{11}{subsection.2.7}%
+\contentsline {subsection}{\numberline {2.8}Arquitectura lógica y física (propuesta)}{11}{subsection.2.8}%
+\contentsline {subsubsection}{\numberline {2.8.1}Arquitectura Lógica (Multicapa - Decoupled REST Architecture)}{11}{subsubsection.2.8.1}%
+\contentsline {subsubsection}{\numberline {2.8.2}Arquitectura Física (Propuesta de Despliegue en Producción)}{12}{subsubsection.2.8.2}%
+\contentsline {subsection}{\numberline {2.9}Prototipo de pantallas no funcional}{13}{subsection.2.9}%
+\contentsline {paragraph}{Mayorista:}{14}{figure.caption.4}%
+\contentsline {paragraph}{Tienda:}{20}{figure.caption.15}%
+\contentsline {paragraph}{Vendedor:}{23}{figure.caption.21}%
+\contentsline {paragraph}{Administrador:}{26}{figure.caption.28}%
