@@ -2,6 +2,10 @@
 
 Análisis y documentación del diseño de una plataforma web B2B mayorista-minorista con enfoque en inclusión digital.
 
+## Desarrollado por:
+- Leandro Saquisari
+- Anthony Romero 
+
 ## Descripción
 
 MayorApp conecta empresas mayoristas con tiendas minoristas, automatizando pedidos, pagos y entregas. Incluye interfaz visual iconográfica, entrada de voz y geolocalización para usuarios con bajo nivel de alfabetización.
