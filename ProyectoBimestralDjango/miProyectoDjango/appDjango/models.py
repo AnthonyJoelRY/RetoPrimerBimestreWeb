@@ -1,256 +1,512 @@
+from decimal import Decimal
+
+from django.conf import settings
 from django.db import models
-
-# Create your models here.
-from django.db import models
-
-
-# USUARIO (tabla padre - herencia por tabla)
-
-class Usuario(models.Model):
-    email = models.EmailField(max_length=255, unique=True)
-    password = models.CharField(max_length=255)
-
-    def __str__(self):
-        return self.email
-
-
-# MAYORISTA
-
-CATEGORIA_CHOICES = [
-    ('Bebidas', 'Bebidas'),
-    ('Abarrotes', 'Abarrotes'),
-    ('Lacteos', 'Lacteos'),
-    ('Limpieza', 'Limpieza'),
-    ('Otro', 'Otro'),
-]
-
-PLAN_CHOICES = [
-    ('suscripcion', 'Suscripcion'),
-    ('comision', 'Comision'),
-    ('mixto', 'Mixto'),
-]
-
-ESTADO_MAYORISTA_CHOICES = [
-    ('pendiente_pago', 'Pendiente de pago'),
-    ('activo', 'Activo'),
-    ('suspendido', 'Suspendido'),
-]
 
 
 class Mayorista(models.Model):
-    usuario = models.OneToOneField(
-        Usuario, on_delete=models.CASCADE, primary_key=True
+    CATEGORIA_CHOICES = [
+        ('bebidas', 'Bebidas'),
+        ('abarrotes', 'Abarrotes'),
+        ('lacteos', 'Lácteos'),
+        ('limpieza', 'Limpieza'),
+        ('otro', 'Otro'),
+    ]
+
+    PLAN_CHOICES = [
+        ('suscripcion', 'Suscripción'),
+        ('comision', 'Comisión'),
+        ('mixto', 'Mixto'),
+    ]
+
+    ESTADO_CHOICES = [
+        ('pendiente_pago', 'Pendiente de pago'),
+        ('activo', 'Activo'),
+        ('suspendido', 'Suspendido'),
+    ]
+
+    cuenta = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='perfil_mayorista'
     )
-    nombre = models.CharField(max_length=255)
-    categoria = models.CharField(max_length=50, choices=CATEGORIA_CHOICES)
-    logo_url = models.TextField(blank=True, null=True)
+
+    nombre = models.CharField(
+        max_length=255
+    )
+
+    categoria = models.CharField(
+        max_length=20,
+        choices=CATEGORIA_CHOICES
+    )
+
+    logo_url = models.TextField(
+        blank=True,
+        null=True
+    )
+
     estado = models.CharField(
-        max_length=20, choices=ESTADO_MAYORISTA_CHOICES, default='pendiente_pago'
+        max_length=20,
+        choices=ESTADO_CHOICES,
+        default='pendiente_pago'
     )
-    plan = models.CharField(max_length=20, choices=PLAN_CHOICES, default='suscripcion')
-    tarifa_anual = models.FloatField(default=0.0)
-    porcentaje_comision = models.FloatField(default=0.0)
-    fecha_vencimiento = models.TextField(blank=True, null=True)
+
+    plan = models.CharField(
+        max_length=20,
+        choices=PLAN_CHOICES,
+        default='suscripcion'
+    )
+
+    tarifa_anual = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0
+    )
+
+    porcentaje_comision = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=0
+    )
+
+    fecha_vencimiento = models.DateField(
+        blank=True,
+        null=True
+    )
 
     def __str__(self):
-        return self.nombre
-
-
-# VENDEDOR
-
-TIPO_PERFIL_CHOICES = [
-    ('general', 'General'),
-    ('especializado', 'Especializado'),
-]
+        return "%s - %s - %s" % (
+            self.nombre,
+            self.get_categoria_display(),
+            self.get_estado_display()
+        )
 
 
 class Vendedor(models.Model):
-    usuario = models.OneToOneField(
-        Usuario, on_delete=models.CASCADE, primary_key=True
+    TIPO_PERFIL_CHOICES = [
+        ('general', 'General'),
+        ('especializado', 'Especializado'),
+    ]
+
+    cuenta = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='perfil_vendedor'
     )
+
     mayorista = models.ForeignKey(
-        Mayorista, on_delete=models.CASCADE, related_name='vendedores'
+        Mayorista,
+        on_delete=models.CASCADE,
+        related_name='vendedores'
     )
-    nombre = models.CharField(max_length=255)
-    primer_login = models.IntegerField(default=1)
+
+    nombre = models.CharField(
+        max_length=255
+    )
+
+    primer_login = models.BooleanField(
+        default=True
+    )
+
     tipo_perfil = models.CharField(
-        max_length=20, choices=TIPO_PERFIL_CHOICES, default='general'
+        max_length=20,
+        choices=TIPO_PERFIL_CHOICES,
+        default='general'
     )
+
     producto_asignado = models.ForeignKey(
         'Producto',
         on_delete=models.SET_NULL,
-        null=True,
         blank=True,
-        related_name='vendedores_asignados',
+        null=True,
+        related_name='vendedores_asignados'
     )
-    activo = models.IntegerField(default=1)
+
+    activo = models.BooleanField(
+        default=True
+    )
 
     def __str__(self):
-        return self.nombre
+        return "%s - %s - %s" % (
+            self.nombre,
+            self.mayorista.nombre,
+            self.get_tipo_perfil_display()
+        )
 
-
-# TIENDA
 
 class Tienda(models.Model):
-    nombre = models.CharField(max_length=255)
-    telefono = models.CharField(max_length=20)
-    logo = models.TextField(blank=True, null=True)
-    password = models.CharField(max_length=255)
-    lat = models.FloatField()
-    lng = models.FloatField()
-    direccion_texto = models.TextField(blank=True, null=True)
+    cuenta = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='perfil_tienda'
+    )
+
+    nombre = models.CharField(
+        max_length=255
+    )
+
+    telefono = models.CharField(
+        max_length=20,
+        unique=True,
+        blank=True,
+        null=True
+    )
+
+    lat = models.FloatField(
+        blank=True,
+        null=True
+    )
+
+    lng = models.FloatField(
+        blank=True,
+        null=True
+    )
+
+    direccion_texto = models.TextField(
+        blank=True,
+        null=True
+    )
 
     def __str__(self):
-        return self.nombre
+        identificador = (
+            self.cuenta.email
+            or self.telefono
+            or self.cuenta.username
+        )
 
+        return "%s - %s" % (
+            self.nombre,
+            identificador
+        )
 
-# PRODUCTO
 
 class Producto(models.Model):
+    UNIDAD_CHOICES = [
+        ('unidad', 'Unidad'),
+        ('caja', 'Caja'),
+        ('kg', 'Kilogramo'),
+    ]
+
     mayorista = models.ForeignKey(
-        Mayorista, on_delete=models.CASCADE, related_name='productos'
+        Mayorista,
+        on_delete=models.CASCADE,
+        related_name='productos'
     )
-    nombre = models.CharField(max_length=255)
+
+    nombre = models.CharField(
+        max_length=255
+    )
+
     foto_url = models.TextField()
-    precio = models.FloatField()
-    stock = models.IntegerField(default=0)
-    minimo_compra = models.IntegerField(default=1)
-    unidad = models.CharField(max_length=50)
-    activo = models.IntegerField(default=1)
+
+    precio = models.DecimalField(
+        max_digits=10,
+        decimal_places=2
+    )
+
+    stock = models.PositiveIntegerField(
+        default=0
+    )
+
+    minimo_compra = models.PositiveIntegerField(
+        default=1
+    )
+
+    unidad = models.CharField(
+        max_length=20,
+        choices=UNIDAD_CHOICES,
+        default='unidad'
+    )
+
+    activo = models.BooleanField(
+        default=True
+    )
 
     def __str__(self):
-        return "%s – %s" % (self.nombre, self.mayorista.nombre)
+        return "%s - %s - $%s" % (
+            self.nombre,
+            self.mayorista.nombre,
+            self.precio
+        )
 
     def verificar_stock(self, cantidad):
-        return self.stock >= cantidad
+        return cantidad > 0 and cantidad <= self.stock
 
-    def descontar_stock(self, cantidad):
-        self.stock -= cantidad
-        self.save()
-
-
-# PEDIDO
-
-ESTADO_PEDIDO_CHOICES = [
-    ('pendiente', 'Pendiente'),
-    ('validado', 'Validado'),
-    ('en_camino', 'En camino'),
-    ('entregado', 'Entregado'),
-    ('cancelado', 'Cancelado'),
-]
-
-TIPO_PAGO_CHOICES = [
-    ('efectivo', 'Efectivo'),
-    ('tarjeta', 'Tarjeta'),
-    ('transferencia', 'Transferencia'),
-]
-
-CREADO_POR_CHOICES = [
-    ('tienda', 'Tienda'),
-    ('vendedor', 'Vendedor'),
-]
+    def verificar_minimo_compra(self, cantidad):
+        return (
+            cantidad > 0
+            and cantidad >= self.minimo_compra
+        )
 
 
 class Pedido(models.Model):
+    CREADO_POR_CHOICES = [
+        ('tienda', 'Tienda'),
+        ('vendedor', 'Vendedor'),
+    ]
+
+    ESTADO_CHOICES = [
+        ('pendiente', 'Pendiente'),
+        ('validado', 'Validado'),
+        ('en_camino', 'En camino'),
+        ('entregado', 'Entregado'),
+        ('cancelado', 'Cancelado'),
+    ]
+
+    TIPO_PAGO_CHOICES = [
+        ('efectivo', 'Efectivo'),
+        ('digital', 'Digital'),
+    ]
+
     tienda = models.ForeignKey(
-        Tienda, on_delete=models.CASCADE, related_name='pedidos'
+        Tienda,
+        on_delete=models.CASCADE,
+        related_name='pedidos'
     )
+
     mayorista = models.ForeignKey(
-        Mayorista, on_delete=models.CASCADE, related_name='pedidos', null=True, blank=True
+        Mayorista,
+        on_delete=models.CASCADE,
+        related_name='pedidos'
     )
+
     vendedor = models.ForeignKey(
-        Vendedor, on_delete=models.SET_NULL, null=True, blank=True, related_name='pedidos'
+        Vendedor,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='pedidos'
     )
-    creado_por = models.CharField(max_length=10, choices=CREADO_POR_CHOICES)
+
+    creado_por = models.CharField(
+        max_length=10,
+        choices=CREADO_POR_CHOICES
+    )
+
     estado = models.CharField(
-        max_length=20, choices=ESTADO_PEDIDO_CHOICES, default='pendiente'
+        max_length=20,
+        choices=ESTADO_CHOICES,
+        default='pendiente'
     )
-    tipo_pago = models.CharField(max_length=20, choices=TIPO_PAGO_CHOICES)
-    total = models.FloatField(default=0.0)
-    comision_plataforma = models.FloatField(default=0.0)
-    cobro_confirmado = models.IntegerField(default=0)
-    nota_voz_url = models.TextField(blank=True, null=True)
-    lat_entrega = models.FloatField(blank=True, null=True)
-    lng_entrega = models.FloatField(blank=True, null=True)
-    telefono_contacto = models.TextField(blank=True, null=True)
+
+    tipo_pago = models.CharField(
+        max_length=20,
+        choices=TIPO_PAGO_CHOICES
+    )
+
+    total = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        editable=False
+    )
+
+    comision_plataforma = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        editable=False
+    )
+
+    cobro_confirmado = models.BooleanField(
+        default=False
+    )
+
+    nota_voz_url = models.TextField(
+        blank=True,
+        null=True
+    )
+
+    lat_entrega = models.FloatField(
+        blank=True,
+        null=True
+    )
+
+    lng_entrega = models.FloatField(
+        blank=True,
+        null=True
+    )
+
+    telefono_contacto = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True
+    )
 
     def __str__(self):
-        return "Pedido #%s – %s" % (self.id, self.tienda.nombre)
+        return "Pedido #%s - %s - %s - %s" % (
+            self.id,
+            self.tienda.nombre,
+            self.mayorista.nombre,
+            self.get_estado_display()
+        )
 
+    def calcular_total(self):
+        total = Decimal('0.00')
 
-# PEDIDO ITEM
+        for item in self.items.all():
+            total = total + item.calcular_subtotal()
+
+        return total
+
+    def calcular_comision(self):
+        if self.mayorista.plan in [
+            'comision',
+            'mixto'
+        ]:
+            return (
+                self.calcular_total()
+                * self.mayorista.porcentaje_comision
+                / Decimal('100.00')
+            )
+
+        return Decimal('0.00')
+
 
 class PedidoItem(models.Model):
     pedido = models.ForeignKey(
-        Pedido, on_delete=models.CASCADE, related_name='items'
+        Pedido,
+        on_delete=models.CASCADE,
+        related_name='items'
     )
+
     producto = models.ForeignKey(
-        Producto, on_delete=models.CASCADE, related_name='pedido_items'
+        Producto,
+        on_delete=models.CASCADE,
+        related_name='pedido_items'
     )
-    cantidad = models.IntegerField()
-    precio_unitario = models.FloatField()
-    subtotal = models.FloatField()
+
+    cantidad = models.PositiveIntegerField()
+
+    precio_unitario = models.DecimalField(
+        max_digits=10,
+        decimal_places=2
+    )
+
+    subtotal = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        editable=False
+    )
 
     class Meta:
-        unique_together = ('pedido', 'producto')
+        unique_together = (
+            'pedido',
+            'producto'
+        )
 
     def __str__(self):
-        return "%s x%s" % (self.producto.nombre, self.cantidad)
+        return "%s - cantidad: %s - pedido: #%s" % (
+            self.producto.nombre,
+            self.cantidad,
+            self.pedido.id
+        )
 
     def calcular_subtotal(self):
-        self.subtotal = self.cantidad * self.precio_unitario
-        return self.subtotal
+        return self.cantidad * self.precio_unitario
 
-
-# PAGO
-
-METODO_PAGO_CHOICES = [
-    ('efectivo', 'Efectivo'),
-    ('tarjeta', 'Tarjeta'),
-    ('transferencia', 'Transferencia'),
-]
-
-ESTADO_PAGO_CHOICES = [
-    ('pendiente', 'Pendiente'),
-    ('confirmado', 'Confirmado'),
-    ('rechazado', 'Rechazado'),
-]
+    def save(self, *args, **kwargs):
+        self.subtotal = self.calcular_subtotal()
+        super().save(*args, **kwargs)
 
 
 class Pago(models.Model):
+    METODO_CHOICES = [
+        ('efectivo', 'Efectivo'),
+        ('tarjeta', 'Tarjeta'),
+        ('transferencia', 'Transferencia'),
+    ]
+
+    ESTADO_CHOICES = [
+        ('pendiente', 'Pendiente'),
+        ('confirmado', 'Confirmado'),
+        ('rechazado', 'Rechazado'),
+    ]
+
     pedido = models.OneToOneField(
-        Pedido, on_delete=models.CASCADE, related_name='pago'
+        Pedido,
+        on_delete=models.CASCADE,
+        related_name='pago'
     )
-    metodo = models.CharField(max_length=20, choices=METODO_PAGO_CHOICES)
-    monto = models.FloatField()
+
+    metodo = models.CharField(
+        max_length=20,
+        choices=METODO_CHOICES
+    )
+
+    monto = models.DecimalField(
+        max_digits=12,
+        decimal_places=2
+    )
+
     estado = models.CharField(
-        max_length=20, choices=ESTADO_PAGO_CHOICES, default='pendiente'
+        max_length=20,
+        choices=ESTADO_CHOICES,
+        default='pendiente'
     )
 
     def __str__(self):
-        return "Pago #%s – %s – %s" % (self.id, self.metodo, self.estado)
+        return "Pago pedido #%s - %s - $%s - %s" % (
+            self.pedido.id,
+            self.get_metodo_display(),
+            self.monto,
+            self.get_estado_display()
+        )
 
-
-# RENDICION
-
-ESTADO_RENDICION_CHOICES = [
-    ('pendiente', 'Pendiente'),
-    ('confirmado', 'Confirmado'),
-]
+    def verificar_monto_correcto(self):
+        return (
+            self.monto
+            == self.pedido.calcular_total()
+        )
 
 
 class Rendicion(models.Model):
+    ESTADO_CHOICES = [
+        ('pendiente', 'Pendiente'),
+        ('confirmado', 'Confirmado por mayorista'),
+    ]
+
     vendedor = models.ForeignKey(
-        Vendedor, on_delete=models.CASCADE, related_name='rendiciones'
+        Vendedor,
+        on_delete=models.CASCADE,
+        related_name='rendiciones'
     )
+
     mayorista = models.ForeignKey(
-        Mayorista, on_delete=models.CASCADE, related_name='rendiciones'
+        Mayorista,
+        on_delete=models.CASCADE,
+        related_name='rendiciones'
     )
-    total_cobrado = models.FloatField(default=0.0)
-    total_comision = models.FloatField(default=0.0)
+
+    total_cobrado = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0
+    )
+
+    total_comision = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0
+    )
+
     estado = models.CharField(
-        max_length=20, choices=ESTADO_RENDICION_CHOICES, default='pendiente'
+        max_length=20,
+        choices=ESTADO_CHOICES,
+        default='pendiente'
     )
 
     def __str__(self):
-        return "Rendicion #%s – %s" % (self.id, self.vendedor.nombre)
+        return "Rendición #%s - %s - %s - %s" % (
+            self.id,
+            self.vendedor.nombre,
+            self.mayorista.nombre,
+            self.get_estado_display()
+        )
+
+    def calcular_total_neto(self):
+        return (
+            self.total_cobrado
+            - self.total_comision
+        )
