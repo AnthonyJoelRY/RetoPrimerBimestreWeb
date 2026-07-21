@@ -1,0 +1,35 @@
+{% extends 'portal/mayorista/_base_mayorista.html' %}
+
+{% block page_title %}Rendiciones{% endblock %}
+{% block page_heading %}Rendiciones{% endblock %}
+{% block page_subheading %}Revisa los cobros en efectivo depositados por tus vendedores.{% endblock %}
+
+{% block page_content %}
+  {% for rendicion in rendiciones %}
+    <div class="portal-list-card">
+      <div class="portal-list-card-row">
+        <div>
+          <strong>{{ rendicion.vendedor.nombre }}</strong>
+          <div style="font-size:12px; color:hsl(var(--muted-foreground));">{{ rendicion.creado_en|date:"d M Y, H:i" }}</div>
+        </div>
+        {% if rendicion.estado == 'confirmado' %}
+          <span class="portal-badge portal-badge-green">Confirmado</span>
+        {% else %}
+          <span class="portal-badge portal-badge-amber">Pendiente</span>
+        {% endif %}
+      </div>
+      <div class="portal-list-card-row" style="margin-top:8px;">
+        <div style="font-size:13px;">
+          Cobrado: <strong>${{ rendicion.total_cobrado }}</strong> ·
+          Comisión: ${{ rendicion.total_comision }} ·
+          Neto: <strong>${{ rendicion.calcular_total_neto }}</strong>
+        </div>
+        {% if rendicion.estado == 'pendiente' %}
+          <a href="{% url 'portal_mayorista_rendicion_confirmar' rendicion.id %}" class="btn btn-primary">Confirmar</a>
+        {% endif %}
+      </div>
+    </div>
+  {% empty %}
+    <p class="portal-empty">No hay rendiciones.</p>
+  {% endfor %}
+{% endblock %}

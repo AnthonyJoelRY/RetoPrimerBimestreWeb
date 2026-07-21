@@ -1,33 +1,14 @@
-{% load static %}
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Pagos - Sistema de Distribución</title>
-  <link rel="stylesheet" href="{% static 'css/style.css' %}">
-</head>
-<body>
-  <nav>
-    <a href="{% url 'index' %}">Inicio</a> |
-    <a href="{% url 'listar_mayoristas' %}">Mayoristas</a> |
-    <a href="{% url 'listar_vendedores' %}">Vendedores</a> |
-    <a href="{% url 'listar_tiendas' %}">Tiendas</a> |
-    <a href="{% url 'listar_productos' %}">Productos</a> |
-    <a href="{% url 'listar_pedidos' %}">Pedidos</a> |
-    <a href="{% url 'listar_items_pedido' %}">Ítems de pedido</a> |
-    <a href="{% url 'listar_pagos' %}">Pagos</a> |
-    <a href="{% url 'listar_rendiciones' %}">Rendiciones</a> |
-    {% if user.is_authenticated %}
-      <a href="{% url 'logout_view' %}">Salir ({{ user.username }})</a>
-    {% else %}
-      <a href="{% url 'login' %}">Ingresar</a>
-    {% endif %}
-  </nav>
+{% extends 'base.html' %}
 
-  <main>
-    <h1>Listado de pagos</h1>
-    <p><a href="{% url 'crear_pago' %}">+ Nuevo</a></p>
-    <table>
+{% block title %}Pagos{% endblock %}
+
+{% block content %}
+      <div class="page-header">
+      <h1>Listado de pagos</h1>
+      <a href="{% url 'crear_pago' %}" class="btn btn-primary">+ Nuevo</a>
+    </div>
+    <div class="table-card">
+<table>
       <thead>
         <tr><th>Pedido</th><th>Método</th><th>Monto</th><th>Estado</th><th>Opciones</th></tr>
       </thead>
@@ -36,9 +17,9 @@
         <tr>
           <td>{{ obj.pedido.id }}</td><td>{{ obj.get_metodo_display }}</td><td>{{ obj.monto }}</td><td>{{ obj.get_estado_display }}</td>
           <td>
-            <a href="{% url 'obtener_pago' obj.id %}">Ver</a>
-            <a href="{% url 'editar_pago' obj.id %}">Editar</a>
-            <a href="{% url 'eliminar_pago' obj.id %}" onclick="return confirm('¿Está seguro de eliminar este registro?')">Eliminar</a>
+            <a href="{% url 'obtener_pago' obj.id %}" class="action action-view">Ver</a>
+            <a href="{% url 'editar_pago' obj.id %}" class="action action-edit">Editar</a>
+            <a href="{% url 'eliminar_pago' obj.id %}" onclick="return confirm('¿Está seguro de eliminar este registro?')" class="action action-delete">Eliminar</a>
           </td>
         </tr>
         {% empty %}
@@ -46,7 +27,7 @@
         {% endfor %}
       </tbody>
     </table>
+    </div>
 
-  </main>
-</body>
-</html>
+  
+{% endblock %}

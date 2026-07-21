@@ -1,36 +1,15 @@
-{% load static %}
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Detalle Pago - Sistema de Distribución</title>
-  <link rel="stylesheet" href="{% static 'css/style.css' %}">
-</head>
-<body>
-  <nav>
-    <a href="{% url 'index' %}">Inicio</a> |
-    <a href="{% url 'listar_mayoristas' %}">Mayoristas</a> |
-    <a href="{% url 'listar_vendedores' %}">Vendedores</a> |
-    <a href="{% url 'listar_tiendas' %}">Tiendas</a> |
-    <a href="{% url 'listar_productos' %}">Productos</a> |
-    <a href="{% url 'listar_pedidos' %}">Pedidos</a> |
-    <a href="{% url 'listar_items_pedido' %}">Ítems de pedido</a> |
-    <a href="{% url 'listar_pagos' %}">Pagos</a> |
-    <a href="{% url 'listar_rendiciones' %}">Rendiciones</a> |
-    {% if user.is_authenticated %}
-      <a href="{% url 'logout_view' %}">Salir ({{ user.username }})</a>
-    {% else %}
-      <a href="{% url 'login' %}">Ingresar</a>
-    {% endif %}
-  </nav>
+{% extends 'base.html' %}
 
-  <main>
-    <h1>Detalle de Pago</h1>
-    <table>
+{% block title %}Detalle Pago{% endblock %}
+
+{% block content %}
+      <h1>Detalle de Pago</h1>
+    <div class="detail-card">
+<table>
       <tr><th>Pedido</th><td>{{ pago.pedido.id }}</td></tr><tr><th>Método</th><td>{{ pago.get_metodo_display }}</td></tr><tr><th>Monto</th><td>{{ pago.monto }}</td></tr><tr><th>Estado</th><td>{{ pago.get_estado_display }}</td></tr>
     </table>
-    <p><a href="{% url 'listar_pagos' %}">Volver al listado</a></p>
+    </div>
+    <a href="{% url 'listar_pagos' %}" class="btn btn-outline back-link">&larr; Volver al listado</a>
 
-  </main>
-</body>
-</html>
+  
+{% endblock %}

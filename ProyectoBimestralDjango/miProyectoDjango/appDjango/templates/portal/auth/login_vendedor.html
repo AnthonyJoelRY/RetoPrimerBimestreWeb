@@ -1,0 +1,27 @@
+{% extends 'portal/auth/_base_public.html' %}
+
+{% block title %}Acceso Vendedor{% endblock %}
+
+{% block public_content %}
+  <h1>Acceso Vendedor</h1>
+  <p class="subtitle">Ingresa con la cuenta que te creó tu mayorista</p>
+
+  {% if error %}<p class="error">{{ error }}</p>{% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+    <p>
+      <label for="email">Correo electrónico</label>
+      <input type="email" id="email" name="email" required>
+    </p>
+    <p>
+      <label for="password">Contraseña</label>
+      <input type="password" id="password" name="password" required>
+    </p>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Ingresar</button>
+    </div>
+  </form>
+
+  <a href="{% url 'portal_landing' %}" class="portal-public-back">&larr; Volver</a>
+{% endblock %}

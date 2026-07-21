@@ -154,6 +154,11 @@ class Producto(models.Model):
     def verificar_minimo_compra(self, cantidad):
         return cantidad > 0 and cantidad >= self.minimo_compra
 
+    def descontar_stock(self, cantidad):
+        self.stock = models.F("stock") - cantidad
+        self.save(update_fields=["stock"])
+        self.refresh_from_db(fields=["stock"])
+
 
 class Pedido(models.Model):
     CREADO_POR_CHOICES = [
@@ -246,6 +251,8 @@ class Pedido(models.Model):
         blank=True,
         null=True,
     )
+
+    creado_en = models.DateTimeField(auto_now_add=True, null=True)
 
     def __str__(self):
         return "Pedido #%s - %s - %s - %s" % (
@@ -357,6 +364,14 @@ class Pago(models.Model):
         max_length=20, choices=ESTADO_CHOICES, default="pendiente"
     )
 
+    rendicion = models.ForeignKey(
+        "Rendicion",
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="pagos",
+    )
+
     def __str__(self):
         return "Pago pedido #%s - %s - $%s - %s" % (
             self.pedido.id,
@@ -391,6 +406,8 @@ class Rendicion(models.Model):
         max_length=20, choices=ESTADO_CHOICES, default="pendiente"
     )
 
+    creado_en = models.DateTimeField(auto_now_add=True, null=True)
+
     def __str__(self):
         return "Rendición #%s - %s - %s - %s" % (
             self.id,
@@ -401,3 +418,31 @@ class Rendicion(models.Model):
 
     def calcular_total_neto(self):
         return self.total_cobrado - self.total_comision
+
+
+class PlataformaConfig(models.Model):
+    """Configuración comercial global (planes y comisiones por defecto)."""
+
+    tarifa_suscripcion_anual = models.DecimalField(
+        max_digits=10, decimal_places=2, default=Decimal("1200.00")
+    )
+
+    porcentaje_comision_default = models.DecimalField(
+        max_digits=5, decimal_places=2, default=Decimal("5.00")
+    )
+
+    tarifa_plan_mixto = models.DecimalField(
+        max_digits=10, decimal_places=2, default=Decimal("600.00")
+    )
+
+    porcentaje_comision_mixto = models.DecimalField(
+        max_digits=5, decimal_places=2, default=Decimal("2.00")
+    )
+
+    def __str__(self):
+        return "Configuración comercial de la plataforma"
+
+    @classmethod
+    def obtener(cls):
+        config, _ = cls.objects.get_or_create(pk=1)
+        return config

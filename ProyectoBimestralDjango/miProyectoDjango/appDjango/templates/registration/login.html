@@ -1,40 +1,23 @@
-{% load static %}
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Ingreso - Sistema de Distribución</title>
-  <link rel="stylesheet" href="{% static 'css/style.css' %}">
-</head>
-<body>
-  <nav>
-    <a href="{% url 'index' %}">Inicio</a> |
-    <a href="{% url 'listar_mayoristas' %}">Mayoristas</a> |
-    <a href="{% url 'listar_vendedores' %}">Vendedores</a> |
-    <a href="{% url 'listar_tiendas' %}">Tiendas</a> |
-    <a href="{% url 'listar_productos' %}">Productos</a> |
-    <a href="{% url 'listar_pedidos' %}">Pedidos</a> |
-    <a href="{% url 'listar_items_pedido' %}">Ítems de pedido</a> |
-    <a href="{% url 'listar_pagos' %}">Pagos</a> |
-    <a href="{% url 'listar_rendiciones' %}">Rendiciones</a> |
-    {% if user.is_authenticated %}
-      <a href="{% url 'logout_view' %}">Salir ({{ user.username }})</a>
-    {% else %}
-      <a href="{% url 'login' %}">Ingresar</a>
-    {% endif %}
-  </nav>
+{% extends 'base.html' %}
 
-  <main>
-    <h1>Ingreso</h1>
-    {% if form.errors %}
-      <p class="error">Usuario o contraseña incorrectos.</p>
-    {% endif %}
-    <form method="post">
-      {% csrf_token %}
-      {{ form.as_p }}
-      <button type="submit">Ingresar</button>
-    </form>
+{% block title %}Ingreso{% endblock %}
 
-  </main>
-</body>
-</html>
+{% block content %}
+  <div class="auth-wrap">
+    <div class="card auth-card">
+      <div class="auth-mark">D</div>
+      <h1>Ingreso</h1>
+      <p class="subtitle">Ingresa con tu cuenta para continuar</p>
+      {% if form.errors %}
+        <p class="error">Usuario o contraseña incorrectos.</p>
+      {% endif %}
+      <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Ingresar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}

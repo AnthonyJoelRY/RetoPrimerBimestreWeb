@@ -1,0 +1,17 @@
+{% extends 'portal/admin/_base_admin.html' %}
+
+{% block page_title %}Configuración{% endblock %}
+{% block page_heading %}Configuración Comercial{% endblock %}
+{% block page_subheading %}Ajusta los precios y comisiones de los planes ofrecidos a mayoristas.{% endblock %}
+
+{% block page_content %}
+  <div class="form-card">
+    <form method="post">
+      {% csrf_token %}
+      {{ formulario.as_p }}
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+      </div>
+    </form>
+  </div>
+{% endblock %}

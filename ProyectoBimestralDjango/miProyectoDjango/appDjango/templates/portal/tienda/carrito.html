@@ -1,0 +1,36 @@
+{% extends 'portal/tienda/_base_tienda.html' %}
+
+{% block page_title %}Tu Pedido{% endblock %}
+
+{% block page_content %}
+  <h2>Tu Pedido</h2>
+
+  {% if lineas %}
+    <form method="post">
+      {% csrf_token %}
+      {% for linea in lineas %}
+        <div class="portal-list-card portal-list-card-row">
+          <div>
+            <strong>{{ linea.producto.nombre }}</strong>
+            <div style="font-size:13px; color:hsl(var(--muted-foreground));">${{ linea.producto.precio }}</div>
+          </div>
+          <div class="portal-qty-control">
+            <button type="submit" name="accion_{{ linea.producto.id }}" value="restar">-</button>
+            <span>{{ linea.cantidad }}</span>
+            <button type="submit" name="accion_{{ linea.producto.id }}" value="sumar">+</button>
+            <button type="submit" name="accion_{{ linea.producto.id }}" value="quitar" title="Quitar">&#128465;</button>
+          </div>
+        </div>
+      {% endfor %}
+    </form>
+
+    <div class="portal-list-card portal-list-card-row">
+      <strong>Total</strong>
+      <strong>${{ total }}</strong>
+    </div>
+    <a href="{% url 'portal_tienda_entrega' %}" class="btn btn-primary" style="width:100%; justify-content:center; margin-top:10px;">PEDIR &#128722;</a>
+  {% else %}
+    <p class="portal-empty">Tu carrito está vacío.</p>
+    <a href="{% url 'portal_tienda_marketplace' %}" class="btn btn-primary" style="width:100%; justify-content:center;">Ver mayoristas</a>
+  {% endif %}
+{% endblock %}

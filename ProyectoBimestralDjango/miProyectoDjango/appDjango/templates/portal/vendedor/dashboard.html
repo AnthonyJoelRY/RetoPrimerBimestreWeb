@@ -1,0 +1,25 @@
+{% extends 'portal/vendedor/_base_vendedor.html' %}
+
+{% block page_title %}Dashboard{% endblock %}
+
+{% block page_content %}
+  <div class="portal-hero-band">
+    <div style="font-weight:700; font-size:16px;">Hola, {{ request.vendedor.nombre }}</div>
+    <div style="font-size:12px; opacity:0.85;">Tu resumen de ventas</div>
+  </div>
+
+  <div class="portal-grid">
+    <div class="stat-card">
+      <h2>${{ por_cobrar|floatformat:2 }}</h2>
+      <p>Por Cobrar</p>
+    </div>
+    <div class="stat-card">
+      <h2>{{ pedidos_activos }}</h2>
+      <p>Pedidos Activos</p>
+    </div>
+  </div>
+
+  <div class="portal-list-card" style="margin-top:16px;">
+    <a href="{% url 'portal_vendedor_pedido_paso1' %}" class="btn btn-primary" style="width:100%; justify-content:center;">+ Tomar nuevo pedido</a>
+  </div>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends 'portal/tienda/_base_tienda.html' %}
+
+{% block page_title %}Comprar al por mayor{% endblock %}
+
+{% block page_content %}
+  <h2>Comprar al por mayor</h2>
+  <p style="color:hsl(var(--muted-foreground)); font-size:13px;">Selecciona un proveedor para ver su catálogo.</p>
+
+  <div class="portal-grid">
+    {% for mayorista in mayoristas %}
+      <a href="{% url 'portal_tienda_catalogo' mayorista.id %}" class="portal-list-card" style="text-decoration:none; text-align:center; display:block;">
+        <div style="width:44px; height:44px; border-radius:999px; background-color:hsl(var(--primary)); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; margin:0 auto 8px;">
+          {{ mayorista.nombre|slice:":2"|upper }}
+        </div>
+        <strong>{{ mayorista.nombre }}</strong>
+        <div style="font-size:12px; color:hsl(var(--muted-foreground));">{{ mayorista.get_categoria_display }}</div>
+      </a>
+    {% empty %}
+      <p class="portal-empty">No hay mayoristas activos por el momento.</p>
+    {% endfor %}
+  </div>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends 'portal/vendedor/_base_vendedor.html' %}
+
+{% block page_title %}Nuevo Pedido 3/3{% endblock %}
+
+{% block page_content %}
+  <a href="{% url 'portal_vendedor_pedido_paso2' tienda.id %}" style="font-size:13px; color:hsl(var(--muted-foreground)); text-decoration:none;">&larr; Editar productos</a>
+  <h2>Nuevo Pedido 3/3 — {{ tienda.nombre }}</h2>
+
+  <div class="detail-card" style="margin-bottom:16px;">
+    <table>
+      {% for linea in lineas %}
+        <tr><td>{{ linea.cantidad }}x {{ linea.producto.nombre }}</td><td style="text-align:right;">${{ linea.subtotal }}</td></tr>
+      {% endfor %}
+      <tr><th>Total a cobrar</th><td style="text-align:right; font-weight:700;">${{ total }}</td></tr>
+    </table>
+  </div>
+
+  <form method="post">
+    {% csrf_token %}
+    <h3>Método de Pago</h3>
+    <label class="portal-list-card" style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+      <input type="radio" name="tipo_pago" value="efectivo" checked> Cobrar en Efectivo
+    </label>
+    <label class="portal-list-card" style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+      <input type="radio" name="tipo_pago" value="digital"> Tienda paga por web (Tarjeta)
+    </label>
+
+    <div class="form-actions" style="margin-top:12px;">
+      <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;">Confirmar Pedido</button>
+    </div>
+  </form>
+{% endblock %}

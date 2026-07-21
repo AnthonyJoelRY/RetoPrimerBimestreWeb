@@ -1,36 +1,15 @@
-{% load static %}
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Detalle PedidoItem - Sistema de Distribución</title>
-  <link rel="stylesheet" href="{% static 'css/style.css' %}">
-</head>
-<body>
-  <nav>
-    <a href="{% url 'index' %}">Inicio</a> |
-    <a href="{% url 'listar_mayoristas' %}">Mayoristas</a> |
-    <a href="{% url 'listar_vendedores' %}">Vendedores</a> |
-    <a href="{% url 'listar_tiendas' %}">Tiendas</a> |
-    <a href="{% url 'listar_productos' %}">Productos</a> |
-    <a href="{% url 'listar_pedidos' %}">Pedidos</a> |
-    <a href="{% url 'listar_items_pedido' %}">Ítems de pedido</a> |
-    <a href="{% url 'listar_pagos' %}">Pagos</a> |
-    <a href="{% url 'listar_rendiciones' %}">Rendiciones</a> |
-    {% if user.is_authenticated %}
-      <a href="{% url 'logout_view' %}">Salir ({{ user.username }})</a>
-    {% else %}
-      <a href="{% url 'login' %}">Ingresar</a>
-    {% endif %}
-  </nav>
+{% extends 'base.html' %}
 
-  <main>
-    <h1>Detalle de PedidoItem</h1>
-    <table>
+{% block title %}Detalle PedidoItem{% endblock %}
+
+{% block content %}
+      <h1>Detalle de PedidoItem</h1>
+    <div class="detail-card">
+<table>
       <tr><th>Pedido</th><td>{{ item_pedido.pedido.id }}</td></tr><tr><th>Producto</th><td>{{ item_pedido.producto.nombre }}</td></tr><tr><th>Cantidad</th><td>{{ item_pedido.cantidad }}</td></tr><tr><th>Precio unitario</th><td>{{ item_pedido.precio_unitario }}</td></tr><tr><th>Subtotal</th><td>{{ item_pedido.subtotal }}</td></tr>
     </table>
-    <p><a href="{% url 'listar_items_pedido' %}">Volver al listado</a></p>
+    </div>
+    <a href="{% url 'listar_items_pedido' %}" class="btn btn-outline back-link">&larr; Volver al listado</a>
 
-  </main>
-</body>
-</html>
+  
+{% endblock %}

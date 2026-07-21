@@ -1,0 +1,39 @@
+{% extends 'portal/mayorista/_base_mayorista.html' %}
+
+{% block page_title %}Inventario{% endblock %}
+{% block page_heading %}Control de Inventario{% endblock %}
+{% block page_subheading %}Ajuste manual de stock por producto.{% endblock %}
+
+{% block page_content %}
+  <div class="table-card">
+    <table>
+      <thead>
+        <tr><th>Producto</th><th>Estado</th><th>Ajustar Stock</th></tr>
+      </thead>
+      <tbody>
+        {% for producto in productos %}
+          <tr>
+            <td>{{ producto.nombre }}</td>
+            <td>
+              {% if producto.stock < stock_critico %}
+                <span class="portal-badge portal-badge-red">Agotándose ({{ producto.stock }})</span>
+              {% else %}
+                <span class="portal-badge portal-badge-green">Normal ({{ producto.stock }})</span>
+              {% endif %}
+            </td>
+            <td>
+              <form method="post" class="portal-qty-control">
+                {% csrf_token %}
+                <input type="hidden" name="producto_id" value="{{ producto.id }}">
+                <input type="number" name="stock" value="{{ producto.stock }}" min="0" style="width:90px;">
+                <button type="submit" class="btn btn-primary" style="padding:6px 12px;">Guardar</button>
+              </form>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="3">No hay productos registrados.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

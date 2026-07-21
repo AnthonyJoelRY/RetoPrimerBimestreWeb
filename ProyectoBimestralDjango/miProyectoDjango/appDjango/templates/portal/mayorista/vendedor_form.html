@@ -1,0 +1,18 @@
+{% extends 'portal/mayorista/_base_mayorista.html' %}
+
+{% block page_title %}Nuevo Vendedor{% endblock %}
+{% block page_heading %}Nuevo Vendedor{% endblock %}
+{% block page_subheading %}Perfil general (catálogo completo) o especializado (un producto asignado).{% endblock %}
+
+{% block page_content %}
+  <div class="form-card">
+    <form method="post">
+      {% csrf_token %}
+      {{ formulario.as_p }}
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Crear Vendedor</button>
+        <a href="{% url 'portal_mayorista_vendedores' %}" class="btn btn-outline">Cancelar</a>
+      </div>
+    </form>
+  </div>
+{% endblock %}

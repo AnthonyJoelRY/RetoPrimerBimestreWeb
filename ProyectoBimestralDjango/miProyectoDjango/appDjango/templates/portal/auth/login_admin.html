@@ -1,0 +1,20 @@
+{% extends 'portal/auth/_base_public.html' %}
+
+{% block title %}Administración MayorApp{% endblock %}
+{% block wrap_class %}portal-public-dark{% endblock %}
+
+{% block public_content %}
+  <h1>Administración MayorApp</h1>
+
+  {% if error %}<p class="error">{{ error }}</p>{% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+    {{ formulario.as_p }}
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Acceder</button>
+    </div>
+  </form>
+
+  <a href="{% url 'portal_landing' %}" class="portal-public-back">&larr; Volver</a>
+{% endblock %}

@@ -1,49 +1,20 @@
-{% load static %}
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Inicio - Sistema de Distribución</title>
-  <link rel="stylesheet" href="{% static 'css/style.css' %}">
-</head>
-<body>
-  <nav>
-    <a href="{% url 'index' %}">Inicio</a> |
-    <a href="{% url 'listar_mayoristas' %}">Mayoristas</a> |
-    <a href="{% url 'listar_vendedores' %}">Vendedores</a> |
-    <a href="{% url 'listar_tiendas' %}">Tiendas</a> |
-    <a href="{% url 'listar_productos' %}">Productos</a> |
-    <a href="{% url 'listar_pedidos' %}">Pedidos</a> |
-    <a href="{% url 'listar_items_pedido' %}">Ítems de pedido</a> |
-    <a href="{% url 'listar_pagos' %}">Pagos</a> |
-    <a href="{% url 'listar_rendiciones' %}">Rendiciones</a> |
-    {% if user.is_authenticated %}
-      <a href="{% url 'logout_view' %}">Salir ({{ user.username }})</a>
-    {% else %}
-      <a href="{% url 'login' %}">Ingresar</a>
-    {% endif %}
-  </nav>
+{% extends 'base.html' %}
 
-  <main>
+{% block title %}Inicio{% endblock %}
+
+{% block content %}
+  <div class="hero">
     <h1>Sistema de Distribución</h1>
-    {% if messages %}
-      <ul class="messages">
-        {% for message in messages %}
-          <li>{{ message }}</li>
-        {% endfor %}
-      </ul>
-    {% endif %}
+    <p>Panel general de mayoristas, vendedores, tiendas y operaciones.</p>
+  </div>
 
-    <div class="dashboard">
-      <div class="card"><h2>{{ numero_mayoristas }}</h2><p>Mayoristas</p></div>
-      <div class="card"><h2>{{ numero_vendedores }}</h2><p>Vendedores</p></div>
-      <div class="card"><h2>{{ numero_tiendas }}</h2><p>Tiendas</p></div>
-      <div class="card"><h2>{{ numero_productos }}</h2><p>Productos</p></div>
-      <div class="card"><h2>{{ numero_pedidos }}</h2><p>Pedidos</p></div>
-      <div class="card"><h2>{{ numero_pagos }}</h2><p>Pagos</p></div>
-      <div class="card"><h2>{{ numero_rendiciones }}</h2><p>Rendiciones</p></div>
-    </div>
-
-  </main>
-</body>
-</html>
+  <div class="stats-grid">
+    <div class="stat-card"><h2>{{ numero_mayoristas }}</h2><p>Mayoristas</p></div>
+    <div class="stat-card"><h2>{{ numero_vendedores }}</h2><p>Vendedores</p></div>
+    <div class="stat-card"><h2>{{ numero_tiendas }}</h2><p>Tiendas</p></div>
+    <div class="stat-card"><h2>{{ numero_productos }}</h2><p>Productos</p></div>
+    <div class="stat-card"><h2>{{ numero_pedidos }}</h2><p>Pedidos</p></div>
+    <div class="stat-card"><h2>{{ numero_pagos }}</h2><p>Pagos</p></div>
+    <div class="stat-card"><h2>{{ numero_rendiciones }}</h2><p>Rendiciones</p></div>
+  </div>
+{% endblock %}
