@@ -1,0 +1,38 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Crear Vendedor - Sistema de Distribución</title>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+  <nav>
+    <a href="{% url 'index' %}">Inicio</a> |
+    <a href="{% url 'listar_mayoristas' %}">Mayoristas</a> |
+    <a href="{% url 'listar_vendedores' %}">Vendedores</a> |
+    <a href="{% url 'listar_tiendas' %}">Tiendas</a> |
+    <a href="{% url 'listar_productos' %}">Productos</a> |
+    <a href="{% url 'listar_pedidos' %}">Pedidos</a> |
+    <a href="{% url 'listar_items_pedido' %}">Ítems de pedido</a> |
+    <a href="{% url 'listar_pagos' %}">Pagos</a> |
+    <a href="{% url 'listar_rendiciones' %}">Rendiciones</a> |
+    {% if user.is_authenticated %}
+      <a href="{% url 'logout_view' %}">Salir ({{ user.username }})</a>
+    {% else %}
+      <a href="{% url 'login' %}">Ingresar</a>
+    {% endif %}
+  </nav>
+
+  <main>
+    <h1>Crear Vendedor</h1>
+    <form method="post">
+      {% csrf_token %}
+      {{ formulario.as_p }}
+      <button type="submit">Guardar</button>
+    </form>
+    <p><a href="{% url 'listar_vendedores' %}">Cancelar</a></p>
+
+  </main>
+</body>
+</html>

@@ -1,0 +1,95 @@
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f4f4f4;
+  color: #222;
+}
+
+nav {
+  background-color: #1f2933;
+  padding: 12px 20px;
+}
+
+nav a {
+  color: #f4f4f4;
+  text-decoration: none;
+  margin-right: 6px;
+}
+
+nav a:hover {
+  text-decoration: underline;
+}
+
+main {
+  padding: 20px;
+}
+
+h1 {
+  margin-top: 0;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #fff;
+}
+
+th, td {
+  border: 1px solid #ddd;
+  padding: 8px 10px;
+  text-align: left;
+}
+
+th {
+  background-color: #e5e7eb;
+}
+
+table td a {
+  margin-right: 8px;
+}
+
+form p {
+  margin: 10px 0;
+}
+
+button {
+  background-color: #1f2933;
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #323f4b;
+}
+
+.dashboard {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.card {
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 16px 24px;
+  text-align: center;
+}
+
+.card h2 {
+  margin: 0 0 6px 0;
+}
+
+.messages {
+  list-style: none;
+  padding: 10px;
+  background-color: #dff0d8;
+  border: 1px solid #b2d8ab;
+}
+
+.error {
+  color: #b00020;
+}

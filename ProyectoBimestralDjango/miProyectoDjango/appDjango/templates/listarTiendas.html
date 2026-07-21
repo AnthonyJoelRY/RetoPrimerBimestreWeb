@@ -1,0 +1,52 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Tiendas - Sistema de Distribución</title>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+  <nav>
+    <a href="{% url 'index' %}">Inicio</a> |
+    <a href="{% url 'listar_mayoristas' %}">Mayoristas</a> |
+    <a href="{% url 'listar_vendedores' %}">Vendedores</a> |
+    <a href="{% url 'listar_tiendas' %}">Tiendas</a> |
+    <a href="{% url 'listar_productos' %}">Productos</a> |
+    <a href="{% url 'listar_pedidos' %}">Pedidos</a> |
+    <a href="{% url 'listar_items_pedido' %}">Ítems de pedido</a> |
+    <a href="{% url 'listar_pagos' %}">Pagos</a> |
+    <a href="{% url 'listar_rendiciones' %}">Rendiciones</a> |
+    {% if user.is_authenticated %}
+      <a href="{% url 'logout_view' %}">Salir ({{ user.username }})</a>
+    {% else %}
+      <a href="{% url 'login' %}">Ingresar</a>
+    {% endif %}
+  </nav>
+
+  <main>
+    <h1>Listado de tiendas</h1>
+    <p><a href="{% url 'crear_tienda' %}">+ Nuevo</a></p>
+    <table>
+      <thead>
+        <tr><th>Nombre</th><th>Teléfono</th><th>Dirección</th><th>Opciones</th></tr>
+      </thead>
+      <tbody>
+        {% for obj in tiendas %}
+        <tr>
+          <td>{{ obj.nombre }}</td><td>{{ obj.telefono }}</td><td>{{ obj.direccion_texto }}</td>
+          <td>
+            <a href="{% url 'obtener_tienda' obj.id %}">Ver</a>
+            <a href="{% url 'editar_tienda' obj.id %}">Editar</a>
+            <a href="{% url 'eliminar_tienda' obj.id %}" onclick="return confirm('¿Está seguro de eliminar este registro?')">Eliminar</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4">No hay registros.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+  </main>
+</body>
+</html>

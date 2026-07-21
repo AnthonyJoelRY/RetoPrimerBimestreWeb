@@ -1,0 +1,36 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Detalle Pedido - Sistema de Distribución</title>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+  <nav>
+    <a href="{% url 'index' %}">Inicio</a> |
+    <a href="{% url 'listar_mayoristas' %}">Mayoristas</a> |
+    <a href="{% url 'listar_vendedores' %}">Vendedores</a> |
+    <a href="{% url 'listar_tiendas' %}">Tiendas</a> |
+    <a href="{% url 'listar_productos' %}">Productos</a> |
+    <a href="{% url 'listar_pedidos' %}">Pedidos</a> |
+    <a href="{% url 'listar_items_pedido' %}">Ítems de pedido</a> |
+    <a href="{% url 'listar_pagos' %}">Pagos</a> |
+    <a href="{% url 'listar_rendiciones' %}">Rendiciones</a> |
+    {% if user.is_authenticated %}
+      <a href="{% url 'logout_view' %}">Salir ({{ user.username }})</a>
+    {% else %}
+      <a href="{% url 'login' %}">Ingresar</a>
+    {% endif %}
+  </nav>
+
+  <main>
+    <h1>Detalle de Pedido</h1>
+    <table>
+      <tr><th>Tienda</th><td>{{ pedido.tienda.nombre }}</td></tr><tr><th>Mayorista</th><td>{{ pedido.mayorista.nombre }}</td></tr><tr><th>Vendedor</th><td>{{ pedido.vendedor.nombre }}</td></tr><tr><th>Creado por</th><td>{{ pedido.get_creado_por_display }}</td></tr><tr><th>Estado</th><td>{{ pedido.get_estado_display }}</td></tr><tr><th>Tipo de pago</th><td>{{ pedido.get_tipo_pago_display }}</td></tr><tr><th>Total</th><td>{{ pedido.total }}</td></tr><tr><th>Comisión plataforma</th><td>{{ pedido.comision_plataforma }}</td></tr><tr><th>Cobro confirmado</th><td>{{ pedido.cobro_confirmado }}</td></tr><tr><th>Teléfono contacto</th><td>{{ pedido.telefono_contacto }}</td></tr>
+    </table>
+    <p><a href="{% url 'listar_pedidos' %}">Volver al listado</a></p>
+
+  </main>
+</body>
+</html>
