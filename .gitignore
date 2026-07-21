@@ -1,10 +1,2 @@
-*.aux
-*.log
-*.out
-*.toc
-*.synctex.gz
-*.fls
-*.fdb_latexmk
-
 # Entorno virtual Python
 ProyectoBimestralDjango/entorno/
