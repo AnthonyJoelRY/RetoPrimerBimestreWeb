@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(python3 -)",
-      "Bash(../entorno/bin/python3 manage.py shell -c ' *)"
+      "Bash(../entorno/bin/python3 manage.py shell -c ' *)",
+      "Bash(curl -s http://127.0.0.1:8000/login/vendedor/ -o /dev/null -w \"login page: %{http_code}\\\\n\")",
+      "Bash(../entorno/bin/python3 -c ' *)"
     ]
   }
 }

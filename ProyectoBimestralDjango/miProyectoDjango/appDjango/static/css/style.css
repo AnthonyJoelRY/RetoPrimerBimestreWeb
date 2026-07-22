@@ -287,6 +287,42 @@ h1, h2, h3 {
   }
 }
 
+.mt-auto {
+  margin-top: auto !important;
+}
+
+/* Sidebar: stretch to full height and pin the user/logout block to the
+   bottom (mt-auto), so it's reachable on every page instead of living
+   in the old top navbar. */
+
+.sidebar-inner {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.sidebar-user {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 16px;
+}
+
+.sidebar-user-email {
+  font-size: 11px;
+  color: hsl(220 9% 55%);
+  padding: 0 12px;
+  margin-bottom: 4px;
+  word-break: break-all;
+}
+
+.sidebar-logout {
+  color: hsl(347 77% 75%) !important;
+}
+
+.sidebar-logout:hover {
+  color: #fff !important;
+  background-color: hsl(347 60% 32%);
+}
+
 /* Layout */
 
 .page-header {

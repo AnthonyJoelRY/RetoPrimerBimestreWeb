@@ -87,5 +87,14 @@
         </li>
       {% endif %}
     </ul>
+
+    <div class="sidebar-user mt-auto pt-3">
+      {% if user.is_authenticated %}
+        <div class="sidebar-user-email">{{ user.username }}</div>
+        <a href="{% url 'portal_logout' %}" class="nav-link sidebar-logout">
+          <span class="sidebar-icon"><i class="fas fa-sign-out-alt"></i></span>Cerrar sesión
+        </a>
+      {% endif %}
+    </div>
   </div>
 </nav>
