@@ -66,6 +66,39 @@ h1, h2, h3 {
   z-index: 20;
 }
 
+/* Mobile sidebar-collapse toggle button (navigation.html) */
+
+.navbar-toggler {
+  padding: 0.25rem 0.75rem;
+  font-size: 1.25rem;
+  line-height: 1;
+  background-color: transparent;
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: box-shadow .15s ease-in-out;
+}
+
+.navbar-toggler:hover {
+  background-color: hsl(var(--secondary));
+}
+
+.navbar-toggler:focus {
+  outline: 0;
+  box-shadow: 0 0 0 0.18rem hsl(var(--primary) / 0.25);
+}
+
+.navbar-toggler-icon {
+  display: inline-block;
+  width: 1.5em;
+  height: 1.5em;
+  vertical-align: middle;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(31,41,55,0.85)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100%;
+}
+
 .brand {
   display: flex;
   align-items: center;
@@ -191,13 +224,70 @@ h1, h2, h3 {
   color: hsl(var(--muted-foreground));
 }
 
-/* Layout */
+/* Missing Bootstrap 5 utilities needed by layouts/includes but absent
+   from the condensed Volt subset (found via a template/CSS class audit) */
 
-main {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 28px 24px 60px;
+.border-bottom {
+  border-bottom: 1px solid hsl(var(--border)) !important;
 }
+
+.text-decoration-none {
+  text-decoration: none !important;
+}
+
+.text-secondary {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+.h4 {
+  font-size: 1.5rem;
+}
+
+.me-3 {
+  margin-right: 1rem !important;
+}
+
+.ms-auto {
+  margin-left: auto !important;
+}
+
+.pt-3 {
+  padding-top: 1rem !important;
+}
+
+.px-0 {
+  padding-right: 0 !important;
+  padding-left: 0 !important;
+}
+
+.py-4 {
+  padding-top: 1.5rem !important;
+  padding-bottom: 1.5rem !important;
+}
+
+/* Bootstrap collapse plugin (used by the mobile sidebar toggle) */
+
+.collapse:not(.show) {
+  display: none;
+}
+
+.collapsing {
+  height: 0;
+  overflow: hidden;
+  transition: height 0.35s ease;
+}
+
+@media (min-width: 992px) {
+  .d-lg-none {
+    display: none !important;
+  }
+
+  .d-lg-block {
+    display: block !important;
+  }
+}
+
+/* Layout */
 
 .page-header {
   display: flex;
