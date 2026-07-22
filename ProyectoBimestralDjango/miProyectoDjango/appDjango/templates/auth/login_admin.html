@@ -1,11 +1,13 @@
 {% extends 'layouts/base-fullscreen.html' %}
+{% load static %}
 
-{% block title %}Administración MayorApp{% endblock %}
+{% block title %}Administración ISBEN Solution{% endblock %}
 
 {% block content %}
   <div class="portal-public-wrap portal-public-dark">
     <div class="portal-public-card">
-  <h1>Administración MayorApp</h1>
+  <img src="{% static 'imagenes/logos_1.png' %}" alt="ISBEN Solution" style="width: 120px; margin-bottom: 12px;">
+  <h1>Administración ISBEN Solution</h1>
 
   {% if error %}<p class="error">{{ error }}</p>{% endif %}
 

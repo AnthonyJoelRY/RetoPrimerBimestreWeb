@@ -1,10 +1,12 @@
 {% extends 'layouts/base-fullscreen.html' %}
+{% load static %}
 
 {% block title %}Ingreso a tu Tienda{% endblock %}
 
 {% block content %}
   <div class="portal-public-wrap ">
     <div class="portal-public-card">
+  <img src="{% static 'imagenes/logos_1.png' %}" alt="ISBEN Solution" style="width: 120px; margin-bottom: 12px;">
   <h1>Ingreso a tu Tienda</h1>
   <p class="subtitle">¿No tienes cuenta? <a href="{% url 'portal_registro_tienda' %}">Regístrate aquí</a></p>
 

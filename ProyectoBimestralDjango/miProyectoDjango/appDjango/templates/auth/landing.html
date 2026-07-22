@@ -1,11 +1,12 @@
 {% extends 'layouts/base-fullscreen.html' %}
+{% load static %}
 
-{% block title %}MayorApp · Plataforma B2B Mayorista-Minorista{% endblock %}
+{% block title %}ISBEN Solution · Plataforma B2B Mayorista-Minorista{% endblock %}
 
 {% block content %}
   <div class="portal-landing">
     <div class="portal-landing-card">
-      <h1>MayorApp</h1>
+      <img src="{% static 'imagenes/logos_1.png' %}" alt="ISBEN Solution" style="width: 200px; max-width: 70%; margin-bottom: 12px;">
       <p>El mercado mayorista en tu bolsillo. Rápido, visual y profesional.</p>
 
       <a href="{% url 'portal_login_mayorista' %}" class="portal-landing-btn portal-landing-btn-solid">Soy Mayorista</a>
