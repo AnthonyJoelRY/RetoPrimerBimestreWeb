@@ -1,0 +1,23 @@
+{% extends "layouts/master.html" %}
+
+<!--
+=========================================================
+* Layout SIN sidebar/navbar (landing, login, registro)
+* Un unico layout para todas las paginas publicas.
+* Hereda todo el <head> de master.html
+=========================================================
+-->
+
+{% block body %}
+
+    {% if messages %}
+      <ul class="messages">
+        {% for message in messages %}
+          <li>{{ message }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+
+    {% block content %}{% endblock content %}
+
+{% endblock body %}

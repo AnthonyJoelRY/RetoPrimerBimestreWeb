@@ -1,0 +1,16 @@
+<nav class="navbar navbar-top navbar-expand border-bottom">
+  <div class="container-fluid px-0">
+    <button class="navbar-toggler d-lg-none me-3" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-label="Abrir menú">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="d-flex align-items-center ms-auto">
+      {% if user.is_authenticated %}
+        <span class="text-muted small me-3">{{ user.username }}</span>
+        <a href="{% url 'portal_logout' %}" class="btn btn-outline-danger btn-sm">
+          <i class="fas fa-sign-out-alt"></i> Cerrar sesión
+        </a>
+      {% endif %}
+    </div>
+  </div>
+</nav>

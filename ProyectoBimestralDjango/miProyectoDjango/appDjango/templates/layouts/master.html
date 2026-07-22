@@ -1,0 +1,48 @@
+{% load static %}
+<!--
+=========================================================
+* Plantilla MASTER del proyecto
+* Todas las paginas heredan (directa o indirectamente) de este archivo.
+* Aqui vive todo el <head>: metas y hojas de estilo.
+* Los layouts "base.html" (con sidebar) y "base-fullscreen.html"
+  (sin sidebar) extienden de este master y solo definen el body.
+=========================================================
+-->
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+    <!-- Primary Meta Tags -->
+    <title>{% block title %}MayorApp{% endblock title %}</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="title" content="{% block meta_title %}MayorApp - Plataforma B2B Mayorista-Minorista{% endblock meta_title %}">
+    <meta name="description" content="{% block meta_description %}Plataforma B2B que conecta mayoristas con tiendas minoristas.{% endblock meta_description %}">
+
+    {% block extra_meta %}{% endblock extra_meta %}
+
+    <!-- Font Awesome (CDN) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
+          integrity="sha512-1ycn6IcaQQ40/MKBW2W4Rhis/DbILU74C1vSrLJxCq57o941Ym01SwNsOMqvEBFlcgUa6xLiPY/NS5R+E6ztJQ=="
+          crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <!-- CSS del proyecto (Volt + estilos propios, unidos en un solo archivo) -->
+    <link type="text/css" href="{% static 'css/style.css' %}" rel="stylesheet">
+
+    <!-- CSS especifico de cada pagina -->
+    {% block stylesheets %}{% endblock stylesheets %}
+</head>
+
+<body class="{% block body_class %}{% endblock body_class %}">
+
+    {% block body %}{% endblock body %}
+
+    {% include 'includes/scripts.html' %}
+
+    <!-- JS especifico de cada pagina -->
+    {% block javascripts %}{% endblock javascripts %}
+
+</body>
+</html>

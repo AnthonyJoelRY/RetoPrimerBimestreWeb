@@ -1,0 +1,23 @@
+{% extends 'layouts/base-fullscreen.html' %}
+
+{% block title %}Administración MayorApp{% endblock %}
+
+{% block content %}
+  <div class="portal-public-wrap portal-public-dark">
+    <div class="portal-public-card">
+  <h1>Administración MayorApp</h1>
+
+  {% if error %}<p class="error">{{ error }}</p>{% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+    {{ formulario.as_p }}
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Acceder</button>
+    </div>
+  </form>
+
+  <a href="{% url 'portal_landing' %}" class="portal-public-back">&larr; Volver</a>
+    </div>
+  </div>
+{% endblock %}

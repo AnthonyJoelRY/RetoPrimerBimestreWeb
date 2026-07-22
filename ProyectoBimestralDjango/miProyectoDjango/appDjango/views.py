@@ -1,11 +1,15 @@
-from django.shortcuts import render, redirect
-from django.contrib.auth import authenticate, login, logout
+from functools import wraps
+
 from django.contrib import messages
-from django.contrib.auth.forms import AuthenticationForm
-from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
+from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm, SetPasswordForm
+from django.contrib.auth.models import User, Group
+from django.db import transaction
+from django.db.models import Q, Sum
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 
 # Django REST Framework
-from django.contrib.auth.models import User, Group
 from rest_framework import viewsets
 from rest_framework import permissions
 
@@ -33,805 +37,874 @@ from appDjango.models import (
     PedidoItem,
     Pago,
     Rendicion,
+    PlataformaConfig,
 )
 
 # Formularios
 from appDjango.forms import (
-    MayoristaForm,
-    VendedorForm,
-    TiendaForm,
-    ProductoForm,
-    PedidoForm,
-    PedidoItemForm,
-    PagoForm,
-    RendicionForm,
+    MayoristaRegistroForm,
+    TiendaRegistroForm,
+    TiendaLoginForm,
+    VendedorCrearForm,
+    ProductoMayoristaForm,
+    AjusteStockForm,
+    PlataformaConfigForm,
+    PedidoEntregaForm,
 )
 
+STOCK_CRITICO = 10
+CARRITO_VENDEDOR_SESSION_KEY = "vendedor_carrito"
+CARRITO_TIENDA_SESSION_KEY = "tienda_carrito"
 
-# Página principal
-def index(request):
+
+# ===================== Decoradores de acceso por rol =====================
+
+def mayorista_required(view_func):
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated or not hasattr(request.user, "perfil_mayorista"):
+            return redirect("portal_login_mayorista")
+        request.mayorista = request.user.perfil_mayorista
+        return view_func(request, *args, **kwargs)
+
+    return wrapper
+
+
+def vendedor_required(view_func):
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated or not hasattr(request.user, "perfil_vendedor"):
+            return redirect("portal_login_vendedor")
+        vendedor = request.user.perfil_vendedor
+        if vendedor.primer_login and view_func.__name__ != "vendedor_cambiar_password":
+            return redirect("portal_vendedor_cambiar_password")
+        request.vendedor = vendedor
+        return view_func(request, *args, **kwargs)
+
+    return wrapper
+
+
+def tienda_required(view_func):
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated or not hasattr(request.user, "perfil_tienda"):
+            return redirect("portal_login_tienda")
+        request.tienda = request.user.perfil_tienda
+        return view_func(request, *args, **kwargs)
+
+    return wrapper
+
+
+def admin_required(view_func):
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated or not request.user.is_staff:
+            return redirect("portal_login_admin")
+        return view_func(request, *args, **kwargs)
+
+    return wrapper
+
+
+# ===================== Lógica compartida de creación de pedidos =====================
+
+def crear_pedido_validado(
+    *,
+    tienda,
+    mayorista,
+    vendedor,
+    creado_por,
+    tipo_pago,
+    lineas,
+    telefono_contacto="",
+    nota_voz=None,
+    lat=None,
+    lng=None,
+):
+    """Crea un pedido validando stock y mínimo de compra dentro de una transacción atómica.
+
+    `lineas` es una lista de dicts {"producto": Producto, "cantidad": int}.
+    Lanza ValueError si el monto o el stock no son válidos (RF-08 / RF-10).
     """
-    Presenta el menú principal del sistema.
-    """
-    mayoristas = Mayorista.objects.all()
-    vendedores = Vendedor.objects.all()
-    tiendas = Tienda.objects.all()
-    productos = Producto.objects.all()
-    pedidos = Pedido.objects.all()
-    pagos = Pago.objects.all()
-    rendiciones = Rendicion.objects.all()
+    with transaction.atomic():
+        productos_bloqueados = {}
+        for linea in lineas:
+            producto = Producto.objects.select_for_update().get(pk=linea["producto"].id)
+            if not producto.verificar_stock(linea["cantidad"]):
+                raise ValueError("No hay stock suficiente de %s." % producto.nombre)
+            if not producto.verificar_minimo_compra(linea["cantidad"]):
+                raise ValueError(
+                    "%s requiere un mínimo de %s unidades por pedido." % (producto.nombre, producto.minimo_compra)
+                )
+            productos_bloqueados[producto.id] = producto
 
-    informacion_template = {
-        "mayoristas": mayoristas,
-        "vendedores": vendedores,
-        "tiendas": tiendas,
-        "productos": productos,
-        "pedidos": pedidos,
-        "pagos": pagos,
-        "rendiciones": rendiciones,
-        "numero_mayoristas": len(mayoristas),
-        "numero_vendedores": len(vendedores),
-        "numero_tiendas": len(tiendas),
-        "numero_productos": len(productos),
-        "numero_pedidos": len(pedidos),
-        "numero_pagos": len(pagos),
-        "numero_rendiciones": len(rendiciones),
-    }
+        pedido = Pedido.objects.create(
+            tienda=tienda,
+            mayorista=mayorista,
+            vendedor=vendedor,
+            creado_por=creado_por,
+            estado="validado",
+            tipo_pago=tipo_pago,
+            telefono_contacto=telefono_contacto,
+            nota_voz_url=nota_voz,
+            lat_entrega=lat,
+            lng_entrega=lng,
+        )
 
-    return render(request, "index.html", informacion_template)
+        for linea in lineas:
+            producto = productos_bloqueados[linea["producto"].id]
+            PedidoItem.objects.create(
+                pedido=pedido,
+                producto=producto,
+                cantidad=linea["cantidad"],
+                precio_unitario=producto.precio,
+            )
+            producto.descontar_stock(linea["cantidad"])
+
+        pedido.actualizar_totales()
+
+        es_digital = tipo_pago == "digital"
+        Pago.objects.create(
+            pedido=pedido,
+            metodo="tarjeta" if es_digital else "efectivo",
+            monto=pedido.total,
+            estado="confirmado" if es_digital else "pendiente",
+        )
+        if es_digital:
+            pedido.cobro_confirmado = True
+            pedido.save(update_fields=["cobro_confirmado"])
+
+    return pedido
 
 
-# Login
-def ingreso(request):
-    """
-    Permite el ingreso de usuarios al sistema.
-    """
+# ===================== Autenticación y landing =====================
+
+def landing(request):
+    if request.user.is_authenticated:
+        if hasattr(request.user, "perfil_mayorista"):
+            return redirect("portal_mayorista_dashboard")
+        if hasattr(request.user, "perfil_vendedor"):
+            return redirect("portal_vendedor_dashboard")
+        if hasattr(request.user, "perfil_tienda"):
+            return redirect("portal_tienda_marketplace")
+        if request.user.is_staff:
+            return redirect("portal_admin_dashboard")
+
+    return render(request, "auth/landing.html")
+
+
+def registro_mayorista(request):
     if request.method == "POST":
-        form = AuthenticationForm(request=request, data=request.POST)
-        print(form.errors)
-
-        if form.is_valid():
-            username = form.data.get("username")
-            raw_password = form.data.get("password")
-
-            user = authenticate(username=username, password=raw_password)
-
-            if user is not None:
-                login(request, user)
-                return redirect(index)
+        formulario = MayoristaRegistroForm(request.POST)
+        if formulario.is_valid():
+            mayorista = formulario.guardar()
+            login(request, mayorista.cuenta)
+            messages.success(request, "Cuenta creada. Tu suscripción está pendiente de activación por el administrador.")
+            return redirect("portal_mayorista_dashboard")
     else:
-        form = AuthenticationForm()
+        formulario = MayoristaRegistroForm()
 
-    informacion_template = {
-        "form": form
-    }
-
-    return render(request, "registration/login.html", informacion_template)
+    return render(request, "auth/registro_mayorista.html", {"formulario": formulario})
 
 
-# Logout
-def logout_view(request):
-    """
-    Permite cerrar la sesión del usuario.
-    """
+def registro_tienda(request):
+    if request.method == "POST":
+        formulario = TiendaRegistroForm(request.POST)
+        if formulario.is_valid():
+            tienda = formulario.guardar()
+            login(request, tienda.cuenta)
+            messages.success(request, "¡Tu tienda ha sido registrada!")
+            return redirect("portal_tienda_marketplace")
+    else:
+        formulario = TiendaRegistroForm()
+
+    return render(request, "auth/registro_tienda.html", {"formulario": formulario})
+
+
+def login_mayorista(request):
+    error = None
+    if request.method == "POST":
+        email = request.POST.get("email", "").lower()
+        password = request.POST.get("password", "")
+        user = authenticate(request, username=email, password=password)
+        if user is not None and hasattr(user, "perfil_mayorista"):
+            login(request, user)
+            return redirect("portal_mayorista_dashboard")
+        error = "Correo o contraseña incorrectos."
+
+    return render(request, "auth/login_mayorista.html", {"error": error})
+
+
+def login_tienda(request):
+    error = None
+    if request.method == "POST":
+        formulario = TiendaLoginForm(request.POST)
+        if formulario.is_valid():
+            user = authenticate(
+                request,
+                username=formulario.cleaned_data["telefono"],
+                password=formulario.cleaned_data["pin"],
+            )
+            if user is not None and hasattr(user, "perfil_tienda"):
+                login(request, user)
+                return redirect("portal_tienda_marketplace")
+            error = "Código inválido. Pídelo a tu mayorista."
+    else:
+        formulario = TiendaLoginForm()
+
+    return render(request, "auth/login_tienda.html", {"formulario": formulario, "error": error})
+
+
+def login_vendedor(request):
+    error = None
+    if request.method == "POST":
+        email = request.POST.get("email", "").lower()
+        password = request.POST.get("password", "")
+        user = authenticate(request, username=email, password=password)
+        if user is not None and hasattr(user, "perfil_vendedor"):
+            login(request, user)
+            if user.perfil_vendedor.primer_login:
+                return redirect("portal_vendedor_cambiar_password")
+            return redirect("portal_vendedor_dashboard")
+        error = "Correo o contraseña incorrectos."
+
+    return render(request, "auth/login_vendedor.html", {"error": error})
+
+
+def login_admin(request):
+    error = None
+    if request.method == "POST":
+        formulario = AuthenticationForm(request=request, data=request.POST)
+        if formulario.is_valid():
+            username = formulario.cleaned_data.get("username")
+            password = formulario.cleaned_data.get("password")
+            user = authenticate(request, username=username, password=password)
+            if user is not None and user.is_staff:
+                login(request, user)
+                return redirect("portal_admin_dashboard")
+            error = "Credenciales incorrectas o cuenta sin permisos de administrador."
+    else:
+        formulario = AuthenticationForm()
+
+    return render(request, "auth/login_admin.html", {"formulario": formulario, "error": error})
+
+
+def logout_portal(request):
     logout(request)
-    messages.info(request, "Has salido del sistema")
-    return redirect(index)
+    messages.info(request, "Has salido del sistema.")
+    return redirect("portal_landing")
 
 
 # ===================== Mayorista =====================
 
-def listar_mayoristas(request):
-    """
-    Lista todos los mayoristas registrados en la base de datos.
-    """
-    mayoristas = Mayorista.objects.all()
+@mayorista_required
+def mayorista_dashboard(request):
+    mayorista = request.mayorista
+    hoy = timezone.now().date()
 
-    informacion_template = {
-        "mayoristas": mayoristas,
-        "numero_mayoristas": len(mayoristas),
+    pedidos_qs = Pedido.objects.filter(mayorista=mayorista)
+
+    contexto = {
+        "pedidos_hoy": pedidos_qs.filter(creado_en__date=hoy, estado="pendiente").count(),
+        "ventas_mes": pedidos_qs.filter(
+            creado_en__year=hoy.year, creado_en__month=hoy.month
+        ).exclude(estado="cancelado").aggregate(total=Sum("total"))["total"] or 0,
+        "stock_critico": Producto.objects.filter(mayorista=mayorista, activo=True, stock__lt=STOCK_CRITICO).count(),
+        "rendiciones_pendientes": Rendicion.objects.filter(mayorista=mayorista, estado="pendiente").count(),
     }
 
-    return render(request, "listarMayoristas.html", informacion_template)
+    return render(request, "mayorista/dashboard.html", contexto)
 
 
-def obtener_mayorista(request, id):
-    """
-    Muestra la información de un mayorista específico.
-    """
-    mayorista = Mayorista.objects.get(pk=id)
-
-    informacion_template = {
-        "mayorista": mayorista
-    }
-
-    return render(request, "obtenerMayorista.html", informacion_template)
+@mayorista_required
+def mayorista_productos(request):
+    productos = Producto.objects.filter(mayorista=request.mayorista).order_by("-id")
+    return render(request, "mayorista/productos.html", {"productos": productos})
 
 
-@login_required(login_url="/entrando/login/")
-@permission_required("appDjango.add_mayorista", login_url="/entrando/login/")
-def crear_mayorista(request):
-    """
-    Permite crear un mayorista desde Django.
-    """
+@mayorista_required
+def mayorista_producto_crear(request):
     if request.method == "POST":
-        formulario = MayoristaForm(request.POST)
-        print(formulario.errors)
-
+        formulario = ProductoMayoristaForm(request.POST)
         if formulario.is_valid():
-            formulario.save()
-            return redirect(index)
+            producto = formulario.save(commit=False)
+            producto.mayorista = request.mayorista
+            producto.save()
+            messages.success(request, "Producto creado correctamente.")
+            return redirect("portal_mayorista_productos")
     else:
-        formulario = MayoristaForm()
+        formulario = ProductoMayoristaForm()
 
-    diccionario = {
-        "formulario": formulario
-    }
-
-    return render(request, "crearMayorista.html", diccionario)
+    return render(request, "mayorista/producto_form.html", {"formulario": formulario, "titulo": "Nuevo producto"})
 
 
-@login_required(login_url="/entrando/login/")
-@permission_required("appDjango.change_mayorista", login_url="/entrando/login/")
-def editar_mayorista(request, id):
-    """
-    Permite editar un mayorista.
-    """
-    mayorista = Mayorista.objects.get(pk=id)
+@mayorista_required
+def mayorista_producto_editar(request, id):
+    producto = get_object_or_404(Producto, pk=id, mayorista=request.mayorista)
 
     if request.method == "POST":
-        formulario = MayoristaForm(request.POST, instance=mayorista)
-        print(formulario.errors)
-
+        formulario = ProductoMayoristaForm(request.POST, instance=producto)
         if formulario.is_valid():
             formulario.save()
-            return redirect(index)
+            messages.success(request, "Producto actualizado.")
+            return redirect("portal_mayorista_productos")
     else:
-        formulario = MayoristaForm(instance=mayorista)
+        formulario = ProductoMayoristaForm(instance=producto)
 
-    diccionario = {
-        "formulario": formulario
-    }
-
-    return render(request, "editarMayorista.html", diccionario)
+    return render(request, "mayorista/producto_form.html", {"formulario": formulario, "titulo": "Editar producto"})
 
 
-@login_required(login_url="/entrando/login/")
-@permission_required("appDjango.delete_mayorista", login_url="/entrando/login/")
-def eliminar_mayorista(request, id):
-    """
-    Permite eliminar un mayorista.
-    """
-    mayorista = Mayorista.objects.get(pk=id)
-    mayorista.delete()
+@mayorista_required
+def mayorista_producto_eliminar(request, id):
+    producto = get_object_or_404(Producto, pk=id, mayorista=request.mayorista)
+    producto.delete()
+    messages.success(request, "Producto eliminado.")
+    return redirect("portal_mayorista_productos")
 
-    return redirect(index)
+
+@mayorista_required
+def mayorista_inventario(request):
+    if request.method == "POST":
+        producto = get_object_or_404(Producto, pk=request.POST.get("producto_id"), mayorista=request.mayorista)
+        formulario = AjusteStockForm(request.POST)
+        if formulario.is_valid():
+            producto.stock = formulario.cleaned_data["stock"]
+            producto.save(update_fields=["stock"])
+            messages.success(request, "Stock actualizado.")
+        return redirect("portal_mayorista_inventario")
+
+    productos = Producto.objects.filter(mayorista=request.mayorista).order_by("nombre")
+    return render(request, "mayorista/inventario.html", {"productos": productos, "stock_critico": STOCK_CRITICO})
+
+
+@mayorista_required
+def mayorista_pedidos(request):
+    estado = request.GET.get("estado", "")
+    pedidos = Pedido.objects.filter(mayorista=request.mayorista).select_related("tienda", "vendedor").order_by("-creado_en")
+    if estado:
+        pedidos = pedidos.filter(estado=estado)
+
+    return render(request, "mayorista/pedidos.html", {
+        "pedidos": pedidos,
+        "estado_seleccionado": estado,
+        "estados": Pedido.ESTADO_CHOICES,
+    })
+
+
+@mayorista_required
+def mayorista_pedido_transicion(request, id, accion):
+    pedido = get_object_or_404(Pedido, pk=id, mayorista=request.mayorista)
+
+    with transaction.atomic():
+        if accion == "enviar_ruta" and pedido.estado == "validado":
+            pedido.estado = "en_camino"
+            pedido.save(update_fields=["estado"])
+        elif accion == "marcar_entregado" and pedido.estado == "en_camino":
+            pedido.estado = "entregado"
+            pedido.save(update_fields=["estado"])
+        elif accion == "cancelar" and pedido.estado in ("pendiente", "validado"):
+            for item in pedido.items.select_related("producto"):
+                item.producto.stock = item.producto.stock + item.cantidad
+                item.producto.save(update_fields=["stock"])
+            pedido.estado = "cancelado"
+            pedido.save(update_fields=["estado"])
+        else:
+            messages.error(request, "No se puede aplicar esa acción al pedido en su estado actual.")
+            return redirect("portal_mayorista_pedidos")
+
+    messages.success(request, "Pedido #%s actualizado." % pedido.id)
+    return redirect("portal_mayorista_pedidos")
+
+
+@mayorista_required
+def mayorista_vendedores(request):
+    vendedores = Vendedor.objects.filter(mayorista=request.mayorista).order_by("nombre")
+    return render(request, "mayorista/vendedores.html", {"vendedores": vendedores})
+
+
+@mayorista_required
+def mayorista_vendedor_crear(request):
+    if request.method == "POST":
+        formulario = VendedorCrearForm(request.POST, mayorista=request.mayorista)
+        if formulario.is_valid():
+            formulario.guardar()
+            messages.success(
+                request,
+                "Vendedor creado. Contraseña inicial: %s (se le pedirá cambiarla al ingresar)." % VendedorCrearForm.CONTRASENA_INICIAL,
+            )
+            return redirect("portal_mayorista_vendedores")
+    else:
+        formulario = VendedorCrearForm(mayorista=request.mayorista)
+
+    return render(request, "mayorista/vendedor_form.html", {"formulario": formulario})
+
+
+@mayorista_required
+def mayorista_vendedor_toggle(request, id):
+    vendedor = get_object_or_404(Vendedor, pk=id, mayorista=request.mayorista)
+    vendedor.activo = not vendedor.activo
+    vendedor.save(update_fields=["activo"])
+    return redirect("portal_mayorista_vendedores")
+
+
+@mayorista_required
+def mayorista_rendiciones(request):
+    rendiciones = Rendicion.objects.filter(mayorista=request.mayorista).order_by("-id")
+    return render(request, "mayorista/rendiciones.html", {"rendiciones": rendiciones})
+
+
+@mayorista_required
+def mayorista_rendicion_confirmar(request, id):
+    rendicion = get_object_or_404(Rendicion, pk=id, mayorista=request.mayorista)
+    rendicion.estado = "confirmado"
+    rendicion.save(update_fields=["estado"])
+    messages.success(request, "Rendición confirmada.")
+    return redirect("portal_mayorista_rendiciones")
+
+
+@mayorista_required
+def mayorista_reportes(request):
+    mayorista = request.mayorista
+    pedidos_entregados = Pedido.objects.filter(mayorista=mayorista, estado="entregado")
+
+    producto_estrella = (
+        PedidoItem.objects.filter(pedido__mayorista=mayorista, pedido__estado="entregado")
+        .values("producto__nombre")
+        .annotate(total_vendido=Sum("cantidad"))
+        .order_by("-total_vendido")
+        .first()
+    )
+
+    mejor_tienda = (
+        pedidos_entregados.values("tienda__nombre")
+        .annotate(total_comprado=Sum("total"))
+        .order_by("-total_comprado")
+        .first()
+    )
+
+    mejor_vendedor = (
+        pedidos_entregados.exclude(vendedor__isnull=True)
+        .values("vendedor__nombre")
+        .annotate(total_vendido=Sum("total"))
+        .order_by("-total_vendido")
+        .first()
+    )
+
+    comisiones_pagadas = pedidos_entregados.aggregate(total=Sum("comision_plataforma"))["total"] or 0
+
+    hoy = timezone.now().date()
+    ventas_por_mes = []
+    for i in range(5, -1, -1):
+        indice_mes = hoy.month - 1 - i
+        anio = hoy.year + indice_mes // 12
+        mes = indice_mes % 12 + 1
+        total = pedidos_entregados.filter(creado_en__year=anio, creado_en__month=mes).aggregate(total=Sum("total"))["total"] or 0
+        ventas_por_mes.append({"etiqueta": "%04d-%02d" % (anio, mes), "total": float(total)})
+
+    maximo = max((m["total"] for m in ventas_por_mes), default=0) or 1
+
+    return render(request, "mayorista/reportes.html", {
+        "producto_estrella": producto_estrella,
+        "mejor_tienda": mejor_tienda,
+        "mejor_vendedor": mejor_vendedor,
+        "comisiones_pagadas": comisiones_pagadas,
+        "ventas_por_mes": ventas_por_mes,
+        "maximo": maximo,
+    })
+
+
+@mayorista_required
+def mayorista_mi_cuenta(request):
+    if request.method == "POST":
+        formulario = PasswordChangeForm(user=request.user, data=request.POST)
+        if formulario.is_valid():
+            formulario.save()
+            update_session_auth_hash(request, formulario.user)
+            messages.success(request, "Contraseña actualizada.")
+            return redirect("portal_mayorista_mi_cuenta")
+    else:
+        formulario = PasswordChangeForm(user=request.user)
+
+    return render(request, "mayorista/mi_cuenta.html", {"formulario": formulario, "mayorista": request.mayorista})
 
 
 # ===================== Vendedor =====================
 
-def listar_vendedores(request):
-    """
-    Lista todos los vendedores registrados en la base de datos.
-    """
-    vendedores = Vendedor.objects.all()
-
-    informacion_template = {
-        "vendedores": vendedores,
-        "numero_vendedores": len(vendedores),
-    }
-
-    return render(request, "listarVendedores.html", informacion_template)
+def _productos_disponibles_vendedor(vendedor):
+    if vendedor.tipo_perfil == "especializado" and vendedor.producto_asignado_id:
+        return Producto.objects.filter(pk=vendedor.producto_asignado_id, activo=True)
+    return Producto.objects.filter(mayorista=vendedor.mayorista, activo=True)
 
 
-def obtener_vendedor(request, id):
-    """
-    Muestra la información de un vendedor específico.
-    """
-    vendedor = Vendedor.objects.get(pk=id)
+@vendedor_required
+def vendedor_dashboard(request):
+    vendedor = request.vendedor
 
-    informacion_template = {
-        "vendedor": vendedor
-    }
+    por_cobrar = Pago.objects.filter(
+        pedido__vendedor=vendedor, metodo="efectivo", estado="pendiente"
+    ).aggregate(total=Sum("monto"))["total"] or 0
 
-    return render(request, "obtenerVendedor.html", informacion_template)
+    pedidos_activos = Pedido.objects.filter(vendedor=vendedor).exclude(estado__in=["entregado", "cancelado"]).count()
+
+    return render(request, "vendedor/dashboard.html", {
+        "por_cobrar": por_cobrar,
+        "pedidos_activos": pedidos_activos,
+    })
 
 
-@login_required(login_url="/entrando/login/")
-@permission_required("appDjango.add_vendedor", login_url="/entrando/login/")
-def crear_vendedor(request):
-    """
-    Permite crear un vendedor desde Django.
-    """
+@vendedor_required
+def vendedor_cambiar_password(request):
     if request.method == "POST":
-        formulario = VendedorForm(request.POST)
-        print(formulario.errors)
-
+        formulario = SetPasswordForm(user=request.user, data=request.POST)
         if formulario.is_valid():
             formulario.save()
-            return redirect(index)
+            update_session_auth_hash(request, formulario.user)
+            vendedor = request.user.perfil_vendedor
+            vendedor.primer_login = False
+            vendedor.save(update_fields=["primer_login"])
+            messages.success(request, "Contraseña actualizada. Ya puedes usar la plataforma.")
+            return redirect("portal_vendedor_dashboard")
     else:
-        formulario = VendedorForm()
+        formulario = SetPasswordForm(user=request.user)
 
-    diccionario = {
-        "formulario": formulario
-    }
-
-    return render(request, "crearVendedor.html", diccionario)
+    return render(request, "vendedor/cambiar_password.html", {"formulario": formulario})
 
 
-@login_required(login_url="/entrando/login/")
-@permission_required("appDjango.change_vendedor", login_url="/entrando/login/")
-def editar_vendedor(request, id):
-    """
-    Permite editar un vendedor.
-    """
-    vendedor = Vendedor.objects.get(pk=id)
+@vendedor_required
+def vendedor_pedido_paso1(request):
+    request.session.pop(CARRITO_VENDEDOR_SESSION_KEY, None)
+    busqueda = request.GET.get("q", "")
+    tiendas = Tienda.objects.none()
+    if busqueda:
+        tiendas = Tienda.objects.filter(Q(nombre__icontains=busqueda) | Q(telefono__icontains=busqueda))
+
+    return render(request, "vendedor/pedido_paso1.html", {"busqueda": busqueda, "tiendas": tiendas})
+
+
+@vendedor_required
+def vendedor_pedido_paso2(request, tienda_id):
+    tienda = get_object_or_404(Tienda, pk=tienda_id)
+    productos = _productos_disponibles_vendedor(request.vendedor)
+    carrito = request.session.get(CARRITO_VENDEDOR_SESSION_KEY, {})
 
     if request.method == "POST":
-        formulario = VendedorForm(request.POST, instance=vendedor)
-        print(formulario.errors)
+        nuevo_carrito = {}
+        for producto in productos:
+            cantidad = int(request.POST.get("cantidad_%s" % producto.id, 0) or 0)
+            if cantidad > 0:
+                nuevo_carrito[str(producto.id)] = cantidad
+        request.session[CARRITO_VENDEDOR_SESSION_KEY] = nuevo_carrito
+        request.session["vendedor_tienda_id"] = tienda.id
+        if not nuevo_carrito:
+            messages.error(request, "Selecciona al menos un producto.")
+            return redirect("portal_vendedor_pedido_paso2", tienda_id=tienda.id)
+        return redirect("portal_vendedor_pedido_paso3")
 
-        if formulario.is_valid():
-            formulario.save()
-            return redirect(index)
-    else:
-        formulario = VendedorForm(instance=vendedor)
+    filas = [{"producto": producto, "cantidad": carrito.get(str(producto.id), 0)} for producto in productos]
 
-    diccionario = {
-        "formulario": formulario
-    }
-
-    return render(request, "editarVendedor.html", diccionario)
+    return render(request, "vendedor/pedido_paso2.html", {
+        "tienda": tienda,
+        "filas": filas,
+    })
 
 
-@login_required(login_url="/entrando/login/")
-@permission_required("appDjango.delete_vendedor", login_url="/entrando/login/")
-def eliminar_vendedor(request, id):
-    """
-    Permite eliminar un vendedor.
-    """
-    vendedor = Vendedor.objects.get(pk=id)
-    vendedor.delete()
+@vendedor_required
+def vendedor_pedido_paso3(request):
+    tienda_id = request.session.get("vendedor_tienda_id")
+    carrito = request.session.get(CARRITO_VENDEDOR_SESSION_KEY, {})
+    tienda = get_object_or_404(Tienda, pk=tienda_id) if tienda_id else None
 
-    return redirect(index)
+    if not tienda or not carrito:
+        messages.error(request, "Selecciona una tienda y productos antes de continuar.")
+        return redirect("portal_vendedor_pedido_paso1")
+
+    productos = {p.id: p for p in Producto.objects.filter(pk__in=carrito.keys())}
+    lineas = []
+    total = 0
+    for producto_id, cantidad in carrito.items():
+        producto = productos[int(producto_id)]
+        subtotal = producto.precio * cantidad
+        total += subtotal
+        lineas.append({"producto": producto, "cantidad": cantidad, "subtotal": subtotal})
+
+    if request.method == "POST":
+        tipo_pago = request.POST.get("tipo_pago", "efectivo")
+
+        try:
+            pedido = crear_pedido_validado(
+                tienda=tienda,
+                mayorista=request.vendedor.mayorista,
+                vendedor=request.vendedor,
+                creado_por="vendedor",
+                tipo_pago=tipo_pago,
+                lineas=lineas,
+                telefono_contacto=tienda.telefono or "",
+            )
+        except ValueError as error:
+            messages.error(request, str(error))
+            return redirect("portal_vendedor_pedido_paso3")
+
+        request.session.pop(CARRITO_VENDEDOR_SESSION_KEY, None)
+        request.session.pop("vendedor_tienda_id", None)
+        messages.success(request, "Pedido #%s registrado correctamente." % pedido.id)
+        return redirect("portal_vendedor_dashboard")
+
+    return render(request, "vendedor/pedido_paso3.html", {"tienda": tienda, "lineas": lineas, "total": total})
+
+
+@vendedor_required
+def vendedor_cobros(request):
+    pagos = Pago.objects.filter(
+        pedido__vendedor=request.vendedor, metodo="efectivo", estado="pendiente"
+    ).select_related("pedido", "pedido__tienda")
+
+    return render(request, "vendedor/cobros.html", {"pagos": pagos})
+
+
+@vendedor_required
+def vendedor_marcar_cobrado(request, pago_id):
+    pago = get_object_or_404(Pago, pk=pago_id, pedido__vendedor=request.vendedor)
+    pago.estado = "confirmado"
+    pago.save(update_fields=["estado"])
+    pago.pedido.cobro_confirmado = True
+    pago.pedido.save(update_fields=["cobro_confirmado"])
+    messages.success(request, "Cobro registrado.")
+    return redirect("portal_vendedor_cobros")
+
+
+@vendedor_required
+def vendedor_rendicion(request):
+    vendedor = request.vendedor
+    pagos_por_rendir = Pago.objects.filter(
+        pedido__vendedor=vendedor, metodo="efectivo", estado="confirmado", rendicion__isnull=True
+    ).select_related("pedido")
+
+    if request.method == "POST":
+        if not pagos_por_rendir.exists():
+            messages.error(request, "No tienes cobros pendientes por rendir.")
+            return redirect("portal_vendedor_rendicion")
+
+        with transaction.atomic():
+            total_cobrado = pagos_por_rendir.aggregate(total=Sum("monto"))["total"] or 0
+            total_comision = sum((p.pedido.comision_plataforma for p in pagos_por_rendir), 0)
+
+            rendicion = Rendicion.objects.create(
+                vendedor=vendedor,
+                mayorista=vendedor.mayorista,
+                total_cobrado=total_cobrado,
+                total_comision=total_comision,
+            )
+            pagos_por_rendir.update(rendicion=rendicion)
+
+        messages.success(request, "Rendición enviada al mayorista.")
+        return redirect("portal_vendedor_dashboard")
+
+    total = pagos_por_rendir.aggregate(total=Sum("monto"))["total"] or 0
+    return render(request, "vendedor/rendicion.html", {"pagos": pagos_por_rendir, "total": total})
 
 
 # ===================== Tienda =====================
 
-def listar_tiendas(request):
-    """
-    Lista todas las tiendas registradas en la base de datos.
-    """
-    tiendas = Tienda.objects.all()
-
-    informacion_template = {
-        "tiendas": tiendas,
-        "numero_tiendas": len(tiendas),
-    }
-
-    return render(request, "listarTiendas.html", informacion_template)
+def _carrito_tienda(request):
+    return request.session.get(CARRITO_TIENDA_SESSION_KEY, {"mayorista_id": None, "items": {}})
 
 
-def obtener_tienda(request, id):
-    """
-    Muestra la información de una tienda específica.
-    """
-    tienda = Tienda.objects.get(pk=id)
-
-    informacion_template = {
-        "tienda": tienda
-    }
-
-    return render(request, "obtenerTienda.html", informacion_template)
+@tienda_required
+def tienda_marketplace(request):
+    mayoristas = Mayorista.objects.filter(estado="activo").order_by("nombre")
+    return render(request, "tienda/marketplace.html", {"mayoristas": mayoristas})
 
 
-@login_required(login_url="/entrando/login/")
-@permission_required("appDjango.add_tienda", login_url="/entrando/login/")
-def crear_tienda(request):
-    """
-    Permite crear una tienda desde Django.
-    """
-    if request.method == "POST":
-        formulario = TiendaForm(request.POST)
-        print(formulario.errors)
+@tienda_required
+def tienda_catalogo(request, mayorista_id):
+    mayorista = get_object_or_404(Mayorista, pk=mayorista_id, estado="activo")
+    productos = Producto.objects.filter(mayorista=mayorista, activo=True).order_by("nombre")
+    carrito = _carrito_tienda(request)
+    en_este_carrito = carrito["items"] if carrito.get("mayorista_id") == mayorista.id else {}
 
-        if formulario.is_valid():
-            formulario.save()
-            return redirect(index)
-    else:
-        formulario = TiendaForm()
-
-    diccionario = {
-        "formulario": formulario
-    }
-
-    return render(request, "crearTienda.html", diccionario)
-
-
-@login_required(login_url="/entrando/login/")
-@permission_required("appDjango.change_tienda", login_url="/entrando/login/")
-def editar_tienda(request, id):
-    """
-    Permite editar una tienda.
-    """
-    tienda = Tienda.objects.get(pk=id)
-
-    if request.method == "POST":
-        formulario = TiendaForm(request.POST, instance=tienda)
-        print(formulario.errors)
-
-        if formulario.is_valid():
-            formulario.save()
-            return redirect(index)
-    else:
-        formulario = TiendaForm(instance=tienda)
-
-    diccionario = {
-        "formulario": formulario
-    }
-
-    return render(request, "editarTienda.html", diccionario)
-
-
-@login_required(login_url="/entrando/login/")
-@permission_required("appDjango.delete_tienda", login_url="/entrando/login/")
-def eliminar_tienda(request, id):
-    """
-    Permite eliminar una tienda.
-    """
-    tienda = Tienda.objects.get(pk=id)
-    tienda.delete()
-
-    return redirect(index)
-
-
-# ===================== Producto =====================
-
-def listar_productos(request):
-    """
-    Lista todos los productos registrados en la base de datos.
-    """
-    productos = Producto.objects.all()
-
-    informacion_template = {
+    return render(request, "tienda/catalogo.html", {
+        "mayorista": mayorista,
         "productos": productos,
-        "numero_productos": len(productos),
-    }
-
-    return render(request, "listarProductos.html", informacion_template)
+        "carrito": en_este_carrito,
+    })
 
 
-def obtener_producto(request, id):
-    """
-    Muestra la información de un producto específico.
-    """
-    producto = Producto.objects.get(pk=id)
+@tienda_required
+def tienda_agregar_carrito(request, producto_id):
+    producto = get_object_or_404(Producto, pk=producto_id, activo=True)
+    cantidad = int(request.POST.get("cantidad", producto.minimo_compra) or producto.minimo_compra)
 
-    informacion_template = {
-        "producto": producto
-    }
+    carrito = _carrito_tienda(request)
+    if carrito.get("mayorista_id") not in (None, producto.mayorista_id):
+        carrito = {"mayorista_id": None, "items": {}}
+        messages.info(request, "Se reinició tu carrito porque cambiaste de mayorista.")
 
-    return render(request, "obtenerProducto.html", informacion_template)
+    carrito["mayorista_id"] = producto.mayorista_id
+    items = carrito.get("items", {})
+    items[str(producto.id)] = items.get(str(producto.id), 0) + cantidad
+    carrito["items"] = items
+    request.session[CARRITO_TIENDA_SESSION_KEY] = carrito
 
-
-@login_required(login_url="/entrando/login/")
-@permission_required("appDjango.add_producto", login_url="/entrando/login/")
-def crear_producto(request):
-    """
-    Permite crear un producto desde Django.
-    """
-    if request.method == "POST":
-        formulario = ProductoForm(request.POST)
-        print(formulario.errors)
-
-        if formulario.is_valid():
-            formulario.save()
-            return redirect(index)
-    else:
-        formulario = ProductoForm()
-
-    diccionario = {
-        "formulario": formulario
-    }
-
-    return render(request, "crearProducto.html", diccionario)
+    messages.success(request, "%s agregado al carrito." % producto.nombre)
+    return redirect("portal_tienda_catalogo", mayorista_id=producto.mayorista_id)
 
 
-@login_required(login_url="/entrando/login/")
-@permission_required("appDjango.change_producto", login_url="/entrando/login/")
-def editar_producto(request, id):
-    """
-    Permite editar un producto.
-    """
-    producto = Producto.objects.get(pk=id)
+@tienda_required
+def tienda_carrito(request):
+    carrito = _carrito_tienda(request)
+    items = carrito.get("items", {})
 
     if request.method == "POST":
-        formulario = ProductoForm(request.POST, instance=producto)
-        print(formulario.errors)
+        for clave in list(items.keys()):
+            accion = request.POST.get("accion_%s" % clave)
+            if accion == "quitar":
+                items.pop(clave, None)
+            elif accion == "sumar":
+                items[clave] += 1
+            elif accion == "restar":
+                items[clave] = max(0, items[clave] - 1)
+                if items[clave] == 0:
+                    items.pop(clave, None)
+        carrito["items"] = items
+        request.session[CARRITO_TIENDA_SESSION_KEY] = carrito
+        return redirect("portal_tienda_carrito")
 
-        if formulario.is_valid():
-            formulario.save()
-            return redirect(index)
-    else:
-        formulario = ProductoForm(instance=producto)
+    productos = {p.id: p for p in Producto.objects.filter(pk__in=items.keys())}
+    lineas = []
+    total = 0
+    for producto_id, cantidad in items.items():
+        producto = productos.get(int(producto_id))
+        if producto is None:
+            continue
+        subtotal = producto.precio * cantidad
+        total += subtotal
+        lineas.append({"producto": producto, "cantidad": cantidad, "subtotal": subtotal})
 
-    diccionario = {
-        "formulario": formulario
-    }
-
-    return render(request, "editarProducto.html", diccionario)
-
-
-@login_required(login_url="/entrando/login/")
-@permission_required("appDjango.delete_producto", login_url="/entrando/login/")
-def eliminar_producto(request, id):
-    """
-    Permite eliminar un producto.
-    """
-    producto = Producto.objects.get(pk=id)
-    producto.delete()
-
-    return redirect(index)
-
-
-# ===================== Pedido =====================
-
-def listar_pedidos(request):
-    """
-    Lista todos los pedidos registrados en la base de datos.
-    """
-    pedidos = Pedido.objects.all()
-
-    informacion_template = {
-        "pedidos": pedidos,
-        "numero_pedidos": len(pedidos),
-    }
-
-    return render(request, "listarPedidos.html", informacion_template)
+    return render(request, "tienda/carrito.html", {"lineas": lineas, "total": total})
 
 
-def obtener_pedido(request, id):
-    """
-    Muestra la información de un pedido específico.
-    """
-    pedido = Pedido.objects.get(pk=id)
+@tienda_required
+def tienda_entrega(request):
+    carrito = _carrito_tienda(request)
+    items = carrito.get("items", {})
+    mayorista = Mayorista.objects.filter(pk=carrito.get("mayorista_id")).first()
 
-    informacion_template = {
-        "pedido": pedido
-    }
+    if not items or mayorista is None:
+        messages.error(request, "Tu carrito está vacío.")
+        return redirect("portal_tienda_marketplace")
 
-    return render(request, "obtenerPedido.html", informacion_template)
-
-
-@login_required(login_url="/entrando/login/")
-@permission_required("appDjango.add_pedido", login_url="/entrando/login/")
-def crear_pedido(request):
-    """
-    Permite crear un pedido desde Django.
-    """
-    if request.method == "POST":
-        formulario = PedidoForm(request.POST)
-        print(formulario.errors)
-
-        if formulario.is_valid():
-            formulario.save()
-            return redirect(index)
-    else:
-        formulario = PedidoForm()
-
-    diccionario = {
-        "formulario": formulario
-    }
-
-    return render(request, "crearPedido.html", diccionario)
-
-
-@login_required(login_url="/entrando/login/")
-@permission_required("appDjango.change_pedido", login_url="/entrando/login/")
-def editar_pedido(request, id):
-    """
-    Permite editar un pedido.
-    """
-    pedido = Pedido.objects.get(pk=id)
+    productos = {p.id: p for p in Producto.objects.filter(pk__in=items.keys())}
+    lineas = [{"producto": productos[int(pid)], "cantidad": cantidad} for pid, cantidad in items.items() if int(pid) in productos]
+    total = sum((linea["producto"].precio * linea["cantidad"] for linea in lineas), 0)
 
     if request.method == "POST":
-        formulario = PedidoForm(request.POST, instance=pedido)
-        print(formulario.errors)
-
+        formulario = PedidoEntregaForm(request.POST)
         if formulario.is_valid():
-            formulario.save()
-            return redirect(index)
+            try:
+                pedido = crear_pedido_validado(
+                    tienda=request.tienda,
+                    mayorista=mayorista,
+                    vendedor=None,
+                    creado_por="tienda",
+                    tipo_pago=formulario.cleaned_data["tipo_pago"],
+                    lineas=lineas,
+                    telefono_contacto=formulario.cleaned_data["telefono_contacto"],
+                    nota_voz=formulario.cleaned_data.get("nota_voz") or None,
+                    lat=formulario.cleaned_data["lat"],
+                    lng=formulario.cleaned_data["lng"],
+                )
+            except ValueError as error:
+                messages.error(request, str(error))
+                return redirect("portal_tienda_entrega")
+
+            request.session.pop(CARRITO_TIENDA_SESSION_KEY, None)
+            return redirect("portal_tienda_confirmacion", pedido_id=pedido.id)
     else:
-        formulario = PedidoForm(instance=pedido)
+        formulario = PedidoEntregaForm(initial={
+            "telefono_contacto": request.tienda.telefono or "",
+            "lat": request.tienda.lat,
+            "lng": request.tienda.lng,
+        })
 
-    diccionario = {
-        "formulario": formulario
+    return render(request, "tienda/entrega.html", {
+        "formulario": formulario,
+        "mayorista": mayorista,
+        "lineas": lineas,
+        "total": total,
+    })
+
+
+@tienda_required
+def tienda_confirmacion(request, pedido_id):
+    pedido = get_object_or_404(Pedido, pk=pedido_id, tienda=request.tienda)
+    return render(request, "tienda/confirmacion.html", {"pedido": pedido})
+
+
+@tienda_required
+def tienda_mis_pedidos(request):
+    pedidos = Pedido.objects.filter(tienda=request.tienda).select_related("mayorista").order_by("-creado_en")
+    return render(request, "tienda/mis_pedidos.html", {"pedidos": pedidos})
+
+
+# ===================== Administrador =====================
+
+@admin_required
+def admin_dashboard(request):
+    hoy = timezone.now().date()
+
+    pedidos_mes = Pedido.objects.filter(creado_en__year=hoy.year, creado_en__month=hoy.month).exclude(estado="cancelado")
+
+    ingresos_suscripciones = Mayorista.objects.filter(estado="activo", plan__in=["suscripcion", "mixto"]).aggregate(
+        total=Sum("tarifa_anual")
+    )["total"] or 0
+    ingresos_comisiones = pedidos_mes.filter(estado="entregado").aggregate(total=Sum("comision_plataforma"))["total"] or 0
+
+    contexto = {
+        "mayoristas_activos": Mayorista.objects.filter(estado="activo").count(),
+        "pendientes_activacion": Mayorista.objects.filter(estado="pendiente_pago").count(),
+        "pedidos_mes": pedidos_mes.count(),
+        "ingresos_estimados": (ingresos_suscripciones / 12) + ingresos_comisiones,
     }
 
-    return render(request, "editarPedido.html", diccionario)
+    return render(request, "admin/dashboard.html", contexto)
 
 
-@login_required(login_url="/entrando/login/")
-@permission_required("appDjango.delete_pedido", login_url="/entrando/login/")
-def eliminar_pedido(request, id):
-    """
-    Permite eliminar un pedido.
-    """
-    pedido = Pedido.objects.get(pk=id)
-    pedido.delete()
-
-    return redirect(index)
+@admin_required
+def admin_mayoristas(request):
+    mayoristas = Mayorista.objects.order_by("-id")
+    return render(request, "admin/mayoristas.html", {"mayoristas": mayoristas})
 
 
-# ===================== PedidoItem =====================
-
-def listar_items_pedido(request):
-    """
-    Lista todos los ítems de pedido registrados en la base de datos.
-    """
-    items_pedido = PedidoItem.objects.all()
-
-    informacion_template = {
-        "items_pedido": items_pedido,
-        "numero_items_pedido": len(items_pedido),
-    }
-
-    return render(request, "listarItemsPedido.html", informacion_template)
+@admin_required
+def admin_mayorista_toggle(request, id):
+    mayorista = get_object_or_404(Mayorista, pk=id)
+    mayorista.estado = "suspendido" if mayorista.estado == "activo" else "activo"
+    mayorista.save(update_fields=["estado"])
+    messages.success(request, "%s ahora está %s." % (mayorista.nombre, mayorista.get_estado_display().lower()))
+    return redirect("portal_admin_mayoristas")
 
 
-def obtener_item_pedido(request, id):
-    """
-    Muestra la información de un ítem de pedido específico.
-    """
-    item_pedido = PedidoItem.objects.get(pk=id)
-
-    informacion_template = {
-        "item_pedido": item_pedido
-    }
-
-    return render(request, "obtenerItemPedido.html", informacion_template)
-
-
-@login_required(login_url="/entrando/login/")
-@permission_required("appDjango.add_pedidoitem", login_url="/entrando/login/")
-def crear_item_pedido(request):
-    """
-    Permite crear un ítem de pedido desde Django.
-    """
-    if request.method == "POST":
-        formulario = PedidoItemForm(request.POST)
-        print(formulario.errors)
-
-        if formulario.is_valid():
-            formulario.save()
-            return redirect(index)
-    else:
-        formulario = PedidoItemForm()
-
-    diccionario = {
-        "formulario": formulario
-    }
-
-    return render(request, "crearItemPedido.html", diccionario)
-
-
-@login_required(login_url="/entrando/login/")
-@permission_required("appDjango.change_pedidoitem", login_url="/entrando/login/")
-def editar_item_pedido(request, id):
-    """
-    Permite editar un ítem de pedido.
-    """
-    item_pedido = PedidoItem.objects.get(pk=id)
-
-    if request.method == "POST":
-        formulario = PedidoItemForm(request.POST, instance=item_pedido)
-        print(formulario.errors)
-
-        if formulario.is_valid():
-            formulario.save()
-            return redirect(index)
-    else:
-        formulario = PedidoItemForm(instance=item_pedido)
-
-    diccionario = {
-        "formulario": formulario
-    }
-
-    return render(request, "editarItemPedido.html", diccionario)
-
-
-@login_required(login_url="/entrando/login/")
-@permission_required("appDjango.delete_pedidoitem", login_url="/entrando/login/")
-def eliminar_item_pedido(request, id):
-    """
-    Permite eliminar un ítem de pedido.
-    """
-    item_pedido = PedidoItem.objects.get(pk=id)
-    item_pedido.delete()
-
-    return redirect(index)
-
-
-# ===================== Pago =====================
-
-def listar_pagos(request):
-    """
-    Lista todos los pagos registrados en la base de datos.
-    """
-    pagos = Pago.objects.all()
-
-    informacion_template = {
-        "pagos": pagos,
-        "numero_pagos": len(pagos),
-    }
-
-    return render(request, "listarPagos.html", informacion_template)
-
-
-def obtener_pago(request, id):
-    """
-    Muestra la información de un pago específico.
-    """
-    pago = Pago.objects.get(pk=id)
-
-    informacion_template = {
-        "pago": pago
-    }
-
-    return render(request, "obtenerPago.html", informacion_template)
-
-
-@login_required(login_url="/entrando/login/")
-@permission_required("appDjango.add_pago", login_url="/entrando/login/")
-def crear_pago(request):
-    """
-    Permite crear un pago desde Django.
-    """
-    if request.method == "POST":
-        formulario = PagoForm(request.POST)
-        print(formulario.errors)
-
-        if formulario.is_valid():
-            formulario.save()
-            return redirect(index)
-    else:
-        formulario = PagoForm()
-
-    diccionario = {
-        "formulario": formulario
-    }
-
-    return render(request, "crearPago.html", diccionario)
-
-
-@login_required(login_url="/entrando/login/")
-@permission_required("appDjango.change_pago", login_url="/entrando/login/")
-def editar_pago(request, id):
-    """
-    Permite editar un pago.
-    """
-    pago = Pago.objects.get(pk=id)
+@admin_required
+def admin_configuracion(request):
+    config = PlataformaConfig.obtener()
 
     if request.method == "POST":
-        formulario = PagoForm(request.POST, instance=pago)
-        print(formulario.errors)
-
+        formulario = PlataformaConfigForm(request.POST, instance=config)
         if formulario.is_valid():
             formulario.save()
-            return redirect(index)
+            messages.success(request, "Configuración comercial actualizada.")
+            return redirect("portal_admin_configuracion")
     else:
-        formulario = PagoForm(instance=pago)
+        formulario = PlataformaConfigForm(instance=config)
 
-    diccionario = {
-        "formulario": formulario
-    }
-
-    return render(request, "editarPago.html", diccionario)
+    return render(request, "admin/configuracion.html", {"formulario": formulario})
 
 
-@login_required(login_url="/entrando/login/")
-@permission_required("appDjango.delete_pago", login_url="/entrando/login/")
-def eliminar_pago(request, id):
-    """
-    Permite eliminar un pago.
-    """
-    pago = Pago.objects.get(pk=id)
-    pago.delete()
-
-    return redirect(index)
+@admin_required
+def admin_suscripciones(request):
+    return render(request, "admin/suscripciones.html")
 
 
-# ===================== Rendicion =====================
-
-def listar_rendiciones(request):
-    """
-    Lista todas las rendiciones registradas en la base de datos.
-    """
-    rendiciones = Rendicion.objects.all()
-
-    informacion_template = {
-        "rendiciones": rendiciones,
-        "numero_rendiciones": len(rendiciones),
-    }
-
-    return render(request, "listarRendiciones.html", informacion_template)
-
-
-def obtener_rendicion(request, id):
-    """
-    Muestra la información de una rendición específica.
-    """
-    rendicion = Rendicion.objects.get(pk=id)
-
-    informacion_template = {
-        "rendicion": rendicion
-    }
-
-    return render(request, "obtenerRendicion.html", informacion_template)
-
-
-@login_required(login_url="/entrando/login/")
-@permission_required("appDjango.add_rendicion", login_url="/entrando/login/")
-def crear_rendicion(request):
-    """
-    Permite crear una rendición desde Django.
-    """
-    if request.method == "POST":
-        formulario = RendicionForm(request.POST)
-        print(formulario.errors)
-
-        if formulario.is_valid():
-            formulario.save()
-            return redirect(index)
-    else:
-        formulario = RendicionForm()
-
-    diccionario = {
-        "formulario": formulario
-    }
-
-    return render(request, "crearRendicion.html", diccionario)
-
-
-@login_required(login_url="/entrando/login/")
-@permission_required("appDjango.change_rendicion", login_url="/entrando/login/")
-def editar_rendicion(request, id):
-    """
-    Permite editar una rendición.
-    """
-    rendicion = Rendicion.objects.get(pk=id)
-
-    if request.method == "POST":
-        formulario = RendicionForm(request.POST, instance=rendicion)
-        print(formulario.errors)
-
-        if formulario.is_valid():
-            formulario.save()
-            return redirect(index)
-    else:
-        formulario = RendicionForm(instance=rendicion)
-
-    diccionario = {
-        "formulario": formulario
-    }
-
-    return render(request, "editarRendicion.html", diccionario)
-
-
-@login_required(login_url="/entrando/login/")
-@permission_required("appDjango.delete_rendicion", login_url="/entrando/login/")
-def eliminar_rendicion(request, id):
-    """
-    Permite eliminar una rendición.
-    """
-    rendicion = Rendicion.objects.get(pk=id)
-    rendicion.delete()
-
-    return redirect(index)
-
-
-# ViewSets para Django REST Framework
+# ===================== API REST (Django REST Framework) =====================
 
 class UserViewSet(viewsets.ModelViewSet):
     """

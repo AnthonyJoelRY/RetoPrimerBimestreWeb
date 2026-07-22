@@ -1,0 +1,53 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}Pedidos{% endblock %}
+
+{% block content %}
+  <div class="mb-4">
+    <h1 class="h4 mb-0">Gestión de Pedidos</h1>
+    <p class="text-muted mb-0">Procesa los pedidos de tiendas y vendedores.</p>
+  </div>
+
+  <form method="get" style="margin-bottom:16px;">
+    <select name="estado" onchange="this.form.submit()">
+      <option value="">Todos los estados</option>
+      {% for valor, etiqueta in estados %}
+        <option value="{{ valor }}" {% if estado_seleccionado == valor %}selected{% endif %}>{{ etiqueta }}</option>
+      {% endfor %}
+    </select>
+  </form>
+
+  {% for pedido in pedidos %}
+    <div class="portal-list-card">
+      <div class="portal-list-card-row">
+        <div>
+          <strong>#{{ pedido.id }}</strong>
+          {% if pedido.estado == 'entregado' %}<span class="portal-badge portal-badge-green">Entregado</span>
+          {% elif pedido.estado == 'en_camino' %}<span class="portal-badge portal-badge-amber">En Camino</span>
+          {% elif pedido.estado == 'validado' %}<span class="portal-badge portal-badge-gray">Validado</span>
+          {% elif pedido.estado == 'cancelado' %}<span class="portal-badge portal-badge-red">Cancelado</span>
+          {% else %}<span class="portal-badge portal-badge-gray">Pendiente</span>{% endif %}
+          <span style="color:hsl(var(--muted-foreground)); font-size:12px;">{{ pedido.creado_en|date:"d M Y, H:i" }}</span>
+        </div>
+        <strong>${{ pedido.total }}</strong>
+      </div>
+      <div class="portal-list-card-row" style="margin-top:8px;">
+        <div>
+          <div><strong>{{ pedido.tienda.nombre }}</strong></div>
+          <div style="font-size:13px; color:hsl(var(--muted-foreground));">{{ pedido.telefono_contacto }}</div>
+          <div style="font-size:13px; color:hsl(var(--muted-foreground));">Creado por: {{ pedido.get_creado_por_display }}{% if pedido.vendedor %} — {{ pedido.vendedor.nombre }}{% endif %}</div>
+        </div>
+        <div class="form-actions">
+          {% if pedido.estado == 'validado' %}
+            <a href="{% url 'portal_mayorista_pedido_transicion' pedido.id 'enviar_ruta' %}" class="btn btn-primary">Enviar a Ruta</a>
+            <a href="{% url 'portal_mayorista_pedido_transicion' pedido.id 'cancelar' %}" class="action action-delete" onclick="return confirm('¿Cancelar este pedido?')">Cancelar Pedido</a>
+          {% elif pedido.estado == 'en_camino' %}
+            <a href="{% url 'portal_mayorista_pedido_transicion' pedido.id 'marcar_entregado' %}" class="btn btn-primary">Marcar Entregado</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  {% empty %}
+    <p class="portal-empty">No hay pedidos registrados.</p>
+  {% endfor %}
+{% endblock %}

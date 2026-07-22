@@ -1,0 +1,22 @@
+{% extends 'layouts/base-fullscreen.html' %}
+
+{% block title %}Registrar Mayorista{% endblock %}
+
+{% block content %}
+  <div class="portal-public-wrap ">
+    <div class="portal-public-card">
+  <h1>Registra tu empresa</h1>
+  <p class="subtitle">Crea tu cuenta de mayorista para empezar a vender</p>
+
+  <form method="post">
+    {% csrf_token %}
+    {{ formulario.as_p }}
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Registrar Mayorista</button>
+    </div>
+  </form>
+
+  <a href="{% url 'portal_login_mayorista' %}" class="portal-public-back">&larr; Ya tengo cuenta</a>
+    </div>
+  </div>
+{% endblock %}

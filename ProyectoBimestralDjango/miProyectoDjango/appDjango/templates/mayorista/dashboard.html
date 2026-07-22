@@ -1,0 +1,40 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+  <div class="mb-4">
+    <h1 class="h4 mb-0">Dashboard</h1>
+    <p class="text-muted mb-0">Resumen de tu operación hoy.</p>
+  </div>
+
+  <div class="portal-grid">
+    <div class="stat-card">
+      <h2>{{ pedidos_hoy }}</h2>
+      <p>Pedidos Hoy — pendientes de validar</p>
+    </div>
+    <div class="stat-card">
+      <h2>${{ ventas_mes|floatformat:2 }}</h2>
+      <p>Ventas del Mes</p>
+    </div>
+    <div class="stat-card">
+      <h2>{{ stock_critico }}</h2>
+      <p>Stock Crítico — productos agotándose</p>
+    </div>
+    <div class="stat-card">
+      <h2>{{ rendiciones_pendientes }}</h2>
+      <p>Rendiciones por confirmar</p>
+    </div>
+  </div>
+
+  <div class="portal-grid" style="margin-top: 20px;">
+    <a href="{% url 'portal_mayorista_pedidos' %}" class="portal-list-card" style="text-decoration:none; display:block;">
+      <strong>Gestionar Pedidos</strong>
+      <p style="margin:4px 0 0; color:hsl(var(--muted-foreground)); font-size:13px;">Procesa los pedidos de tiendas y vendedores.</p>
+    </a>
+    <a href="{% url 'portal_mayorista_productos' %}" class="portal-list-card" style="text-decoration:none; display:block;">
+      <strong>Catálogo</strong>
+      <p style="margin:4px 0 0; color:hsl(var(--muted-foreground)); font-size:13px;">Gestiona tus productos, precios y stock.</p>
+    </a>
+  </div>
+{% endblock %}

@@ -1,0 +1,91 @@
+{% load static %}
+<!--
+=========================================================
+* Sidebar unico para los 4 roles (mayorista, vendedor, tienda, admin).
+* Cada bloque de enlaces solo se muestra si el usuario tiene ese perfil.
+=========================================================
+-->
+<nav id="sidebarMenu" class="sidebar d-lg-block collapse">
+  <div class="sidebar-inner px-3 pt-3">
+    <div class="d-flex align-items-center mb-3">
+      <a href="{% url 'portal_landing' %}" class="text-white text-decoration-none d-flex align-items-center">
+        <span class="fw-bold">MayorApp</span>
+      </a>
+    </div>
+
+    <ul class="nav flex-column">
+      {% if user.perfil_mayorista %}
+        <li class="sidebar-heading text-secondary">Empresa</li>
+        <li class="nav-item {% if 'mayorista_dashboard' in request.resolver_match.url_name %}active{% endif %}">
+          <a href="{% url 'portal_mayorista_dashboard' %}" class="nav-link"><span class="sidebar-icon"><i class="fas fa-th-large"></i></span>Dashboard</a>
+        </li>
+        <li class="nav-item {% if 'producto' in request.resolver_match.url_name %}active{% endif %}">
+          <a href="{% url 'portal_mayorista_productos' %}" class="nav-link"><span class="sidebar-icon"><i class="fas fa-box"></i></span>Productos</a>
+        </li>
+        <li class="nav-item {% if request.resolver_match.url_name == 'portal_mayorista_inventario' %}active{% endif %}">
+          <a href="{% url 'portal_mayorista_inventario' %}" class="nav-link"><span class="sidebar-icon"><i class="fas fa-warehouse"></i></span>Inventario</a>
+        </li>
+        <li class="nav-item {% if 'pedido' in request.resolver_match.url_name %}active{% endif %}">
+          <a href="{% url 'portal_mayorista_pedidos' %}" class="nav-link"><span class="sidebar-icon"><i class="fas fa-shopping-cart"></i></span>Pedidos</a>
+        </li>
+        <li class="nav-item {% if 'vendedor' in request.resolver_match.url_name %}active{% endif %}">
+          <a href="{% url 'portal_mayorista_vendedores' %}" class="nav-link"><span class="sidebar-icon"><i class="fas fa-user-tie"></i></span>Vendedores</a>
+        </li>
+        <li class="nav-item {% if 'rendicion' in request.resolver_match.url_name %}active{% endif %}">
+          <a href="{% url 'portal_mayorista_rendiciones' %}" class="nav-link"><span class="sidebar-icon"><i class="fas fa-file-invoice-dollar"></i></span>Rendiciones</a>
+        </li>
+        <li class="nav-item {% if request.resolver_match.url_name == 'portal_mayorista_reportes' %}active{% endif %}">
+          <a href="{% url 'portal_mayorista_reportes' %}" class="nav-link"><span class="sidebar-icon"><i class="fas fa-chart-line"></i></span>Reportes</a>
+        </li>
+        <li class="nav-item {% if request.resolver_match.url_name == 'portal_mayorista_mi_cuenta' %}active{% endif %}">
+          <a href="{% url 'portal_mayorista_mi_cuenta' %}" class="nav-link"><span class="sidebar-icon"><i class="fas fa-cog"></i></span>Mi Cuenta</a>
+        </li>
+      {% endif %}
+
+      {% if user.perfil_vendedor %}
+        <li class="sidebar-heading text-secondary">Vendedor</li>
+        <li class="nav-item {% if request.resolver_match.url_name == 'portal_vendedor_dashboard' %}active{% endif %}">
+          <a href="{% url 'portal_vendedor_dashboard' %}" class="nav-link"><span class="sidebar-icon"><i class="fas fa-th-large"></i></span>Inicio</a>
+        </li>
+        <li class="nav-item {% if 'pedido' in request.resolver_match.url_name %}active{% endif %}">
+          <a href="{% url 'portal_vendedor_pedido_paso1' %}" class="nav-link"><span class="sidebar-icon"><i class="fas fa-plus-circle"></i></span>Nuevo Pedido</a>
+        </li>
+        <li class="nav-item {% if 'cobro' in request.resolver_match.url_name %}active{% endif %}">
+          <a href="{% url 'portal_vendedor_cobros' %}" class="nav-link"><span class="sidebar-icon"><i class="fas fa-money-bill-wave"></i></span>Cobros</a>
+        </li>
+        <li class="nav-item {% if request.resolver_match.url_name == 'portal_vendedor_rendicion' %}active{% endif %}">
+          <a href="{% url 'portal_vendedor_rendicion' %}" class="nav-link"><span class="sidebar-icon"><i class="fas fa-file-invoice-dollar"></i></span>Rendir Caja</a>
+        </li>
+      {% endif %}
+
+      {% if user.perfil_tienda %}
+        <li class="sidebar-heading text-secondary">Tienda</li>
+        <li class="nav-item {% if request.resolver_match.url_name == 'portal_tienda_marketplace' %}active{% endif %}">
+          <a href="{% url 'portal_tienda_marketplace' %}" class="nav-link"><span class="sidebar-icon"><i class="fas fa-store"></i></span>Marketplace</a>
+        </li>
+        <li class="nav-item {% if request.resolver_match.url_name == 'portal_tienda_carrito' %}active{% endif %}">
+          <a href="{% url 'portal_tienda_carrito' %}" class="nav-link"><span class="sidebar-icon"><i class="fas fa-shopping-basket"></i></span>Carrito</a>
+        </li>
+        <li class="nav-item {% if request.resolver_match.url_name == 'portal_tienda_mis_pedidos' %}active{% endif %}">
+          <a href="{% url 'portal_tienda_mis_pedidos' %}" class="nav-link"><span class="sidebar-icon"><i class="fas fa-receipt"></i></span>Mis Pedidos</a>
+        </li>
+      {% endif %}
+
+      {% if user.is_staff %}
+        <li class="sidebar-heading text-secondary">Administrador</li>
+        <li class="nav-item {% if request.resolver_match.url_name == 'portal_admin_dashboard' %}active{% endif %}">
+          <a href="{% url 'portal_admin_dashboard' %}" class="nav-link"><span class="sidebar-icon"><i class="fas fa-th-large"></i></span>Dashboard</a>
+        </li>
+        <li class="nav-item {% if 'mayorista' in request.resolver_match.url_name %}active{% endif %}">
+          <a href="{% url 'portal_admin_mayoristas' %}" class="nav-link"><span class="sidebar-icon"><i class="fas fa-building"></i></span>Mayoristas</a>
+        </li>
+        <li class="nav-item {% if request.resolver_match.url_name == 'portal_admin_configuracion' %}active{% endif %}">
+          <a href="{% url 'portal_admin_configuracion' %}" class="nav-link"><span class="sidebar-icon"><i class="fas fa-sliders-h"></i></span>Configuración</a>
+        </li>
+        <li class="nav-item {% if request.resolver_match.url_name == 'portal_admin_suscripciones' %}active{% endif %}">
+          <a href="{% url 'portal_admin_suscripciones' %}" class="nav-link"><span class="sidebar-icon"><i class="fas fa-credit-card"></i></span>Suscripciones</a>
+        </li>
+      {% endif %}
+    </ul>
+  </div>
+</nav>

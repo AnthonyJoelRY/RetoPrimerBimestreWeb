@@ -1,0 +1,36 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}Mi Cuenta{% endblock %}
+
+{% block content %}
+  <div class="mb-4">
+    <h1 class="h4 mb-0">Mi Cuenta</h1>
+    <p class="text-muted mb-0">Información de la empresa y configuración.</p>
+  </div>
+
+  <div class="detail-card" style="margin-bottom:20px;">
+    <table>
+      <tr><th>Empresa</th><td>{{ mayorista.nombre }}</td></tr>
+      <tr><th>Correo</th><td>{{ mayorista.cuenta.email }}</td></tr>
+      <tr><th>Categoría</th><td>{{ mayorista.get_categoria_display }}</td></tr>
+      <tr><th>Plan actual</th><td>{{ mayorista.get_plan_display }}</td></tr>
+      <tr><th>Estado</th><td>
+        {% if mayorista.estado == 'activo' %}<span class="portal-badge portal-badge-green">Activo</span>
+        {% elif mayorista.estado == 'suspendido' %}<span class="portal-badge portal-badge-red">Suspendido</span>
+        {% else %}<span class="portal-badge portal-badge-amber">Pendiente de pago</span>{% endif %}
+      </td></tr>
+      <tr><th>Vencimiento suscripción</th><td>{{ mayorista.fecha_vencimiento|default:"N/A" }}</td></tr>
+    </table>
+  </div>
+
+  <div class="form-card">
+    <h3 style="margin-top:0;">Cambiar Contraseña</h3>
+    <form method="post">
+      {% csrf_token %}
+      {{ formulario.as_p }}
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Cambiar Contraseña</button>
+      </div>
+    </form>
+  </div>
+{% endblock %}

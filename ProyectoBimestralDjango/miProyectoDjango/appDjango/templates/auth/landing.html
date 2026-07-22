@@ -1,0 +1,18 @@
+{% extends 'layouts/base-fullscreen.html' %}
+
+{% block title %}MayorApp · Plataforma B2B Mayorista-Minorista{% endblock %}
+
+{% block content %}
+  <div class="portal-landing">
+    <div class="portal-landing-card">
+      <h1>MayorApp</h1>
+      <p>El mercado mayorista en tu bolsillo. Rápido, visual y profesional.</p>
+
+      <a href="{% url 'portal_login_mayorista' %}" class="portal-landing-btn portal-landing-btn-solid">Soy Mayorista</a>
+      <a href="{% url 'portal_login_tienda' %}" class="portal-landing-btn portal-landing-btn-outline">Tengo una Tienda</a>
+      <a href="{% url 'portal_login_vendedor' %}" class="portal-landing-btn portal-landing-btn-solid">Soy Vendedor</a>
+
+      <a href="{% url 'portal_login_admin' %}" class="portal-landing-admin">¿Administrador?</a>
+    </div>
+  </div>
+{% endblock %}
