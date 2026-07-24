@@ -3,12 +3,49 @@
 {% block title %}Suscripciones{% endblock %}
 
 {% block content %}
-  <div class="mb-4">
-    <h1 class="h4 mb-0">Suscripciones y Pagos</h1>
-    <p class="text-muted mb-0">Historial de pagos de planes de los mayoristas.</p>
+  <div class="pagina-cabecera">
+    <div class="pagina-cabecera-titulo">
+      <div class="pagina-cabecera-icono"><i class="fas fa-credit-card"></i></div>
+      <div>
+        <h1>Suscripciones</h1>
+        <p class="subtitulo">Planes contratados por los mayoristas y sus vencimientos.</p>
+      </div>
+    </div>
+    <div class="pagina-cabecera-acciones">
+      <span class="portal-badge portal-badge-green"><i class="fas fa-dollar-sign"></i>&nbsp;${{ ingresos_anuales|floatformat:2 }} / año</span>
+      {% if por_vencer > 0 %}
+        <span class="portal-badge portal-badge-red"><i class="fas fa-exclamation-triangle"></i>&nbsp;{{ por_vencer }} vencida{{ por_vencer|pluralize }}</span>
+      {% endif %}
+    </div>
   </div>
 
-  <div class="card" style="padding:40px; text-align:center; color:hsl(var(--muted-foreground));">
-    Módulo de registro de pagos (en desarrollo para la v2).
+  <div class="table-card">
+    <table>
+      <thead>
+        <tr><th>Empresa</th><th>Plan</th><th>Tarifa anual</th><th>Vencimiento</th><th>Estado</th></tr>
+      </thead>
+      <tbody>
+        {% for mayorista in suscripciones %}
+          <tr>
+            <td><strong>{{ mayorista.nombre }}</strong><div style="font-size:12px; color:hsl(var(--muted-foreground));">{{ mayorista.cuenta.email }}</div></td>
+            <td>{{ mayorista.get_plan_display }}</td>
+            <td>${{ mayorista.tarifa_anual }}</td>
+            <td>
+              {{ mayorista.fecha_vencimiento|default:"—" }}
+              {% if mayorista.fecha_vencimiento and mayorista.fecha_vencimiento < hoy %}
+                <span class="portal-badge portal-badge-red">Vencida</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if mayorista.estado == 'activo' %}<span class="portal-badge portal-badge-green">Activo</span>
+              {% elif mayorista.estado == 'suspendido' %}<span class="portal-badge portal-badge-red">Suspendido</span>
+              {% else %}<span class="portal-badge portal-badge-amber">Pendiente de pago</span>{% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5">Ningún mayorista tiene plan con suscripción todavía.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
 {% endblock %}

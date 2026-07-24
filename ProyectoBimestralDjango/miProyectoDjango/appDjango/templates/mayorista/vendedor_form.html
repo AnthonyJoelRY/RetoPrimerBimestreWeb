@@ -3,19 +3,71 @@
 {% block title %}Nuevo Vendedor{% endblock %}
 
 {% block content %}
-  <div class="mb-4">
-    <h1 class="h4 mb-0">Nuevo Vendedor</h1>
-    <p class="text-muted mb-0">Perfil general (catálogo completo) o especializado (un producto asignado).</p>
+  <div class="pagina-cabecera">
+    <div class="pagina-cabecera-titulo">
+      <div class="pagina-cabecera-icono"><i class="fas fa-user-tie"></i></div>
+      <div>
+        <h1>Nuevo Vendedor</h1>
+        <p class="subtitulo">Crea el acceso para un vendedor de calle o preventista.</p>
+      </div>
+    </div>
   </div>
 
-  <div class="form-card">
-    <form method="post">
-      {% csrf_token %}
-      {{ formulario.as_p }}
-      <div class="form-actions">
-        <button type="submit" class="btn btn-primary">Crear Vendedor</button>
-        <a href="{% url 'portal_mayorista_vendedores' %}" class="btn btn-outline">Cancelar</a>
+  <div class="form-pagina">
+    <div class="form-card">
+      {% if formulario.non_field_errors %}
+        <div class="login-isben-error">{{ formulario.non_field_errors.0 }}</div>
+      {% endif %}
+
+      <form method="post">
+        {% csrf_token %}
+
+        <div class="campo-fila">
+          <div class="campo-grupo">
+            {{ formulario.nombre.label_tag }}
+            {{ formulario.nombre }}
+            {% if formulario.nombre.errors %}<div class="campo-error">{{ formulario.nombre.errors.0 }}</div>{% endif %}
+          </div>
+
+          <div class="campo-grupo">
+            {{ formulario.email.label_tag }}
+            {{ formulario.email }}
+            {% if formulario.email.errors %}<div class="campo-error">{{ formulario.email.errors.0 }}</div>{% endif %}
+          </div>
+        </div>
+
+        <div class="campo-fila">
+          <div class="campo-grupo">
+            {{ formulario.tipo_perfil.label_tag }}
+            {{ formulario.tipo_perfil }}
+            {% if formulario.tipo_perfil.errors %}<div class="campo-error">{{ formulario.tipo_perfil.errors.0 }}</div>{% endif %}
+          </div>
+
+          <div class="campo-grupo">
+            {{ formulario.producto_asignado.label_tag }}
+            {{ formulario.producto_asignado }}
+            {% if formulario.producto_asignado.errors %}<div class="campo-error">{{ formulario.producto_asignado.errors.0 }}</div>{% endif %}
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Crear Vendedor</button>
+          <a href="{% url 'portal_mayorista_vendedores' %}" class="btn btn-outline">Cancelar</a>
+        </div>
+      </form>
+    </div>
+
+    <div class="form-lateral">
+      <h4><i class="fas fa-info-circle" style="color:var(--isben-naranja);"></i> Tipos de perfil</h4>
+      <ul>
+        <li><strong>General:</strong> puede vender todo tu catálogo.</li>
+        <li><strong>Especializado:</strong> vende únicamente el producto que le asignes.</li>
+      </ul>
+
+      <div class="aviso">
+        <i class="fas fa-key"></i>
+        <span>El vendedor ingresará con la contraseña inicial <strong>cambiar123</strong> y el sistema le pedirá cambiarla en su primer ingreso.</span>
       </div>
-    </form>
+    </div>
   </div>
 {% endblock %}

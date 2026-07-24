@@ -3,35 +3,61 @@
 {% block title %}Vendedores{% endblock %}
 
 {% block content %}
-  <div class="mb-4">
-    <h1 class="h4 mb-0">Fuerza de Ventas</h1>
-    <p class="text-muted mb-0">Gestiona tus vendedores de calle y preventistas.</p>
-  </div>
-
-  <div class="page-header">
-    <span></span>
-    <a href="{% url 'portal_mayorista_vendedor_crear' %}" class="btn btn-primary">+ Nuevo Vendedor</a>
+  <div class="pagina-cabecera">
+    <div class="pagina-cabecera-titulo">
+      <div class="pagina-cabecera-icono"><i class="fas fa-user-tie"></i></div>
+      <div>
+        <h1>Fuerza de Ventas</h1>
+        <p class="subtitulo">Gestiona tus vendedores de calle y preventistas.</p>
+      </div>
+    </div>
+    <div class="pagina-cabecera-acciones">
+      <a href="{% url 'portal_mayorista_vendedor_crear' %}" class="btn btn-primary"><i class="fas fa-plus"></i> Nuevo Vendedor</a>
+    </div>
   </div>
 
   <div class="portal-grid">
     {% for vendedor in vendedores %}
-      <div class="portal-list-card">
-        <strong>{{ vendedor.nombre }}</strong>
-        <div style="font-size:13px; color:hsl(var(--muted-foreground)); margin:2px 0 8px;">{{ vendedor.cuenta.email }}</div>
-        <span class="portal-badge {% if vendedor.tipo_perfil == 'especializado' %}portal-badge-amber{% else %}portal-badge-green{% endif %}">
-          {{ vendedor.get_tipo_perfil_display }}
-        </span>
+      <div class="portal-list-card vendedor-card {% if not vendedor.activo %}inactivo{% endif %}">
+        <div class="vendedor-cabecera">
+          <div class="vendedor-avatar">{{ vendedor.nombre|first|upper }}</div>
+          <div>
+            <strong>{{ vendedor.nombre }}</strong>
+            <div class="vendedor-correo">{{ vendedor.cuenta.email }}</div>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+          <span class="portal-badge {% if vendedor.tipo_perfil == 'especializado' %}portal-badge-amber{% else %}portal-badge-green{% endif %}">
+            {{ vendedor.get_tipo_perfil_display }}
+          </span>
+          {% if vendedor.activo %}
+            <span class="portal-badge portal-badge-green"><i class="fas fa-check"></i>&nbsp;Activo</span>
+          {% else %}
+            <span class="portal-badge portal-badge-red">Inactivo</span>
+          {% endif %}
+          {% if vendedor.primer_login %}
+            <span class="portal-badge portal-badge-gray" title="Aún no ha cambiado su contraseña inicial">Sin primer ingreso</span>
+          {% endif %}
+        </div>
+
         {% if vendedor.producto_asignado %}
-          <div style="font-size:12px; margin-top:6px; color:hsl(var(--muted-foreground));">Vende: {{ vendedor.producto_asignado.nombre }}</div>
+          <div style="font-size:12px; margin-top:8px; color:hsl(var(--muted-foreground));"><i class="fas fa-box"></i> Vende: {{ vendedor.producto_asignado.nombre }}</div>
         {% endif %}
-        <div class="form-actions" style="margin-top:10px;">
-          <a href="{% url 'portal_mayorista_vendedor_toggle' vendedor.id %}" class="btn btn-outline">
-            {% if vendedor.activo %}Desactivar{% else %}Activar{% endif %}
-          </a>
+
+        <div class="form-actions" style="margin-top:12px;">
+          {% if vendedor.activo %}
+            <a href="{% url 'portal_mayorista_vendedor_toggle' vendedor.id %}"
+               class="btn btn-outline"
+               data-confirmar="¿Desactivar a {{ vendedor.nombre }}?"
+               data-confirmar-texto="No podrá iniciar sesión ni tomar pedidos hasta que lo reactives.">Desactivar</a>
+          {% else %}
+            <a href="{% url 'portal_mayorista_vendedor_toggle' vendedor.id %}" class="btn btn-primary">Activar</a>
+          {% endif %}
         </div>
       </div>
     {% empty %}
-      <p class="portal-empty">Aún no has creado vendedores.</p>
+      <p class="portal-empty">Aún no has creado vendedores. Crea el primero con el botón "Nuevo Vendedor".</p>
     {% endfor %}
   </div>
 {% endblock %}

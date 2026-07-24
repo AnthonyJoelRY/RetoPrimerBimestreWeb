@@ -4,16 +4,116 @@
 {% block title %}ISBEN Solution · Plataforma B2B Mayorista-Minorista{% endblock %}
 
 {% block content %}
-  <div class="portal-landing">
-    <div class="portal-landing-card">
-      <img src="{% static 'imagenes/logos_1.png' %}" alt="ISBEN Solution" style="width: 200px; max-width: 70%; margin-bottom: 12px;">
-      <p>El mercado mayorista en tu bolsillo. Rápido, visual y profesional.</p>
+  <div class="hero-split">
 
-      <a href="{% url 'portal_login_mayorista' %}" class="portal-landing-btn portal-landing-btn-solid">Soy Mayorista</a>
-      <a href="{% url 'portal_login_tienda' %}" class="portal-landing-btn portal-landing-btn-outline">Tengo una Tienda</a>
-      <a href="{% url 'portal_login_vendedor' %}" class="portal-landing-btn portal-landing-btn-solid">Soy Vendedor</a>
+    <!-- Panel de marca -->
+    <div class="hero-marca">
+      <img src="{% static 'imagenes/iso_1.png' %}" alt="" class="hero-marca-watermark" aria-hidden="true">
 
-      <a href="{% url 'portal_login_admin' %}" class="portal-landing-admin">¿Administrador?</a>
+      <svg class="hero-curva" viewBox="0 0 90 1000" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M62 0 C 8 280, 84 640, 34 1000 L90 1000 L90 0 Z" fill="#FFF9F0"></path>
+        <path d="M62 0 C 8 280, 84 640, 34 1000" fill="none" stroke="url(#curvaGrad)" stroke-width="3"></path>
+        <defs>
+          <linearGradient id="curvaGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#FFC22F"></stop>
+            <stop offset="1" stop-color="#FB4318"></stop>
+          </linearGradient>
+        </defs>
+      </svg>
+
+      <div class="hero-marca-contenido">
+        <img src="{% static 'imagenes/logos_2.png' %}" alt="ISBEN Solution" style="width: 220px; margin-bottom: 26px;">
+
+        <span class="hero-eyebrow">Soluciones Tecnológicas a la Medida</span>
+
+        <h1>El mercado <span class="acento-naranja">mayorista</span><br>en tu bolsillo<span class="acento-dorado">.</span></h1>
+
+        <p class="hero-marca-tagline">Una plataforma de ISBEN Solution que conecta mayoristas, vendedores y tiendas: pedidos, inventario y cobros en un solo lugar.</p>
+
+        <ul class="hero-marca-features">
+          <li>
+            <i class="fas fa-bolt"></i>
+            <span><strong>Pedidos digitales</strong><small>sin papel ni errores</small></span>
+          </li>
+          <li>
+            <i class="fas fa-chart-bar"></i>
+            <span><strong>Stock sincronizado</strong><small>en tiempo real</small></span>
+          </li>
+          <li>
+            <i class="fas fa-hand-holding-usd"></i>
+            <span><strong>Cobros y rendiciones</strong><small>con trazabilidad</small></span>
+          </li>
+        </ul>
+
+        <div class="hero-confianza">
+          <i class="fas fa-shield-alt"></i>
+          <span>
+            <strong>Innovamos, diseñamos y desarrollamos</strong>
+            <small>Tecnología con calidad, seguridad y eficiencia para potenciar el crecimiento de tu negocio.</small>
+          </span>
+        </div>
+      </div>
     </div>
+
+    <!-- Panel de acceso -->
+    <div class="hero-acceso">
+      <div class="hero-acceso-inner">
+        <h2>¿Cómo quieres ingresar?</h2>
+        <p class="hero-acceso-sub">Elige tu rol para ir a tu espacio de trabajo.</p>
+        <div class="hero-acceso-linea"></div>
+
+        <a href="{% url 'portal_login_mayorista' %}" class="rol-card">
+          <span class="rol-card-icono rol-icono-naranja"><i class="fas fa-industry"></i></span>
+          <span class="rol-card-texto">
+            <strong>Soy Mayorista</strong>
+            <small>Gestiona tu catálogo, pedidos, vendedores y reportes</small>
+          </span>
+          <i class="fas fa-chevron-right rol-card-flecha"></i>
+        </a>
+
+        <a href="{% url 'portal_login_tienda' %}" class="rol-card">
+          <span class="rol-card-icono rol-icono-dorado"><i class="fas fa-store"></i></span>
+          <span class="rol-card-texto">
+            <strong>Tengo una tienda</strong>
+            <small>Compra al por mayor con fotos, fácil y en 3 pasos</small>
+          </span>
+          <i class="fas fa-chevron-right rol-card-flecha"></i>
+        </a>
+
+        <a href="{% url 'portal_login_vendedor' %}" class="rol-card">
+          <span class="rol-card-icono rol-icono-oscuro"><i class="fas fa-user-tie"></i></span>
+          <span class="rol-card-texto">
+            <strong>Soy Vendedor</strong>
+            <small>Toma pedidos en campo, cobra y rinde tu caja</small>
+          </span>
+          <i class="fas fa-chevron-right rol-card-flecha"></i>
+        </a>
+
+        <a href="{% url 'portal_login_admin' %}" class="hero-acceso-admin">
+          <i class="fas fa-shield-alt"></i> Acceso de administrador
+          <i class="fas fa-chevron-right"></i>
+        </a>
+
+        <div class="hero-acceso-footer">
+          <div>
+            <i class="fas fa-lightbulb"></i>
+            <span><strong>Innovación</strong><small>Tecnología de vanguardia para tu negocio</small></span>
+          </div>
+          <div>
+            <i class="fas fa-award"></i>
+            <span><strong>Calidad</strong><small>Compromiso con la excelencia en cada proyecto</small></span>
+          </div>
+          <div>
+            <i class="fas fa-handshake"></i>
+            <span><strong>Confianza</strong><small>Relaciones sólidas y transparentes</small></span>
+          </div>
+          <div>
+            <i class="fas fa-bullseye"></i>
+            <span><strong>Compromiso</strong><small>Enfocados en el éxito del cliente</small></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 {% endblock %}

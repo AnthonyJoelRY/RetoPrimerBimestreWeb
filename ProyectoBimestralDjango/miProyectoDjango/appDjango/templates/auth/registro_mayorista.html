@@ -1,24 +1,65 @@
 {% extends 'layouts/base-fullscreen.html' %}
 {% load static %}
 
-{% block title %}Registrar Mayorista{% endblock %}
+{% block title %}Registra tu empresa · ISBEN Solution{% endblock %}
 
 {% block content %}
-  <div class="portal-public-wrap ">
-    <div class="portal-public-card">
-  <img src="{% static 'imagenes/logos_1.png' %}" alt="ISBEN Solution" style="width: 120px; margin-bottom: 12px;">
-  <h1>Registra tu empresa</h1>
-  <p class="subtitle">Crea tu cuenta de mayorista para empezar a vender</p>
+  <div class="login-isben">
+    <img src="{% static 'imagenes/iso_1.png' %}" alt="" class="login-isben-watermark" aria-hidden="true">
 
-  <form method="post">
-    {% csrf_token %}
-    {{ formulario.as_p }}
-    <div class="form-actions">
-      <button type="submit" class="btn btn-primary">Registrar Mayorista</button>
-    </div>
-  </form>
+    <div class="login-isben-card login-isben-card-ancha">
+      <img src="{% static 'imagenes/logos_2.png' %}" alt="ISBEN Solution" class="login-isben-logo">
 
-  <a href="{% url 'portal_login_mayorista' %}" class="portal-public-back">&larr; Ya tengo cuenta</a>
+      <div class="login-rol-chip rol-icono-naranja"><i class="fas fa-industry"></i></div>
+
+      <h1>Registra tu empresa</h1>
+      <p class="subtitle">Crea tu cuenta de mayorista para empezar a vender</p>
+
+      {% if formulario.non_field_errors %}
+        <div class="login-isben-error">{{ formulario.non_field_errors.0 }}</div>
+      {% endif %}
+
+      <form method="post">
+        {% csrf_token %}
+
+        <div class="campo-grupo">
+          {{ formulario.nombre.label_tag }}
+          {{ formulario.nombre }}
+          {% if formulario.nombre.errors %}<div class="campo-error">{{ formulario.nombre.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div class="campo-grupo">
+          {{ formulario.email.label_tag }}
+          {{ formulario.email }}
+          {% if formulario.email.errors %}<div class="campo-error">{{ formulario.email.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div class="campo-grupo">
+          {{ formulario.password.label_tag }}
+          {{ formulario.password }}
+          {% if formulario.password.errors %}<div class="campo-error">{{ formulario.password.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div class="campo-fila">
+          <div class="campo-grupo">
+            {{ formulario.categoria.label_tag }}
+            {{ formulario.categoria }}
+            {% if formulario.categoria.errors %}<div class="campo-error">{{ formulario.categoria.errors.0 }}</div>{% endif %}
+          </div>
+
+          <div class="campo-grupo">
+            {{ formulario.plan.label_tag }}
+            {{ formulario.plan }}
+            {% if formulario.plan.errors %}<div class="campo-error">{{ formulario.plan.errors.0 }}</div>{% endif %}
+          </div>
+        </div>
+
+        <button type="submit" class="login-isben-btn">Registrar mi empresa</button>
+      </form>
+
+      <a href="{% url 'portal_login_mayorista' %}" class="login-isben-volver"><i class="fas fa-arrow-left"></i> Ya tengo cuenta</a>
+
+      <div class="login-isben-pie">Innovamos, diseñamos y desarrollamos · ISBEN Solution</div>
     </div>
   </div>
 {% endblock %}

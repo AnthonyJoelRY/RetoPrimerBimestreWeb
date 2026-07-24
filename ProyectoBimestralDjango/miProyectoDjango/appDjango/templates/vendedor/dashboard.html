@@ -1,25 +1,44 @@
 {% extends 'layouts/base.html' %}
 
-{% block title %}Dashboard{% endblock %}
+{% block title %}Inicio{% endblock %}
 
 {% block content %}
-  <div class="portal-hero-band">
-    <div style="font-weight:700; font-size:16px;">Hola, {{ request.vendedor.nombre }}</div>
-    <div style="font-size:12px; opacity:0.85;">Tu resumen de ventas</div>
+  <div class="pagina-cabecera">
+    <div class="pagina-cabecera-titulo">
+      <div class="pagina-cabecera-icono"><i class="fas fa-user-tie"></i></div>
+      <div>
+        <h1>Hola, {{ request.vendedor.nombre }}</h1>
+        <p class="subtitulo">Tu resumen de ventas · {{ request.vendedor.mayorista.nombre }}</p>
+      </div>
+    </div>
+    <div class="pagina-cabecera-acciones">
+      <a href="{% url 'portal_vendedor_pedido_paso1' %}" class="btn btn-primary"><i class="fas fa-plus"></i> Tomar pedido</a>
+    </div>
   </div>
 
   <div class="portal-grid">
     <div class="stat-card">
-      <h2>${{ por_cobrar|floatformat:2 }}</h2>
-      <p>Por Cobrar</p>
+      <div class="stat-card-icon stat-icon-dorado"><i class="fas fa-dollar-sign"></i></div>
+      <h2>${{ ventas_hoy|floatformat:2 }}</h2>
+      <p>Ventas de hoy</p>
     </div>
-    <div class="stat-card">
-      <h2>{{ pedidos_activos }}</h2>
-      <p>Pedidos Activos</p>
-    </div>
-  </div>
 
-  <div class="portal-list-card" style="margin-top:16px;">
-    <a href="{% url 'portal_vendedor_pedido_paso1' %}" class="btn btn-primary" style="width:100%; justify-content:center;">+ Tomar nuevo pedido</a>
+    <a href="{% url 'portal_vendedor_cobros' %}" class="stat-card stat-card-link">
+      <div class="stat-card-icon stat-icon-naranja"><i class="fas fa-money-bill-wave"></i></div>
+      <h2>${{ por_cobrar|floatformat:2 }}</h2>
+      <p>Por cobrar en efectivo</p>
+    </a>
+
+    <a href="{% url 'portal_vendedor_rendicion' %}" class="stat-card stat-card-link">
+      <div class="stat-card-icon stat-icon-dorado"><i class="fas fa-file-invoice-dollar"></i></div>
+      <h2>${{ por_rendir|floatformat:2 }}</h2>
+      <p>Efectivo por rendir</p>
+    </a>
+
+    <div class="stat-card">
+      <div class="stat-card-icon stat-icon-naranja"><i class="fas fa-shopping-cart"></i></div>
+      <h2>{{ pedidos_activos }}</h2>
+      <p>Pedidos activos</p>
+    </div>
   </div>
 {% endblock %}

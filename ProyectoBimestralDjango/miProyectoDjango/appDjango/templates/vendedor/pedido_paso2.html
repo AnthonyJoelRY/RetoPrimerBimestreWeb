@@ -3,25 +3,54 @@
 {% block title %}Nuevo Pedido 2/3{% endblock %}
 
 {% block content %}
-  <a href="{% url 'portal_vendedor_pedido_paso1' %}" style="font-size:13px; color:hsl(var(--muted-foreground)); text-decoration:none;">&larr; Cambiar tienda</a>
-  <h2>Nuevo Pedido 2/3 — {{ tienda.nombre }}</h2>
+  <div class="pagina-cabecera">
+    <div class="pagina-cabecera-titulo">
+      <div class="pagina-cabecera-icono"><i class="fas fa-boxes"></i></div>
+      <div>
+        <h1>Pedido para {{ tienda.nombre }}</h1>
+        <p class="subtitulo">Indica las cantidades de cada producto.</p>
+      </div>
+    </div>
+    <div class="pagina-cabecera-acciones">
+      <a href="{% url 'portal_vendedor_pedido_paso1' %}" class="btn btn-outline"><i class="fas fa-arrow-left"></i> Cambiar tienda</a>
+    </div>
+  </div>
+
+  <div class="pasos">
+    <div class="paso hecho"><span class="paso-circulo"><i class="fas fa-check"></i></span> Tienda</div>
+    <div class="paso-linea"></div>
+    <div class="paso activo"><span class="paso-circulo">2</span> Productos</div>
+    <div class="paso-linea"></div>
+    <div class="paso"><span class="paso-circulo">3</span> Pago</div>
+  </div>
 
   <form method="post">
     {% csrf_token %}
     {% for fila in filas %}
       <div class="portal-list-card portal-list-card-row">
-        <div>
-          <strong>{{ fila.producto.nombre }}</strong>
-          <div style="font-size:13px; color:hsl(var(--muted-foreground));">${{ fila.producto.precio }} · Stock: {{ fila.producto.stock }}</div>
+        <div class="vp-producto">
+          {% if fila.producto.foto_url %}
+            <img src="{{ fila.producto.foto_url }}" alt="">
+          {% else %}
+            <div class="vp-foto-vacia"><i class="fas fa-box"></i></div>
+          {% endif %}
+          <div>
+            <strong>{{ fila.producto.nombre }}</strong>
+            <div style="font-size:13px; color:hsl(var(--muted-foreground));">
+              ${{ fila.producto.precio }} · Stock: {{ fila.producto.stock }}{% if fila.producto.minimo_compra > 1 %} · <span style="color:var(--isben-dorado-oscuro); font-weight:700;">Mín: {{ fila.producto.minimo_compra }}</span>{% endif %}
+            </div>
+          </div>
         </div>
-        <input type="number" name="cantidad_{{ fila.producto.id }}" value="{{ fila.cantidad }}" min="0" max="{{ fila.producto.stock }}" style="width:80px;">
+        <input type="number" name="cantidad_{{ fila.producto.id }}" value="{{ fila.cantidad }}" min="0" max="{{ fila.producto.stock }}" style="width:80px; text-align:center; font-weight:700;">
       </div>
     {% empty %}
-      <p class="portal-empty">Este vendedor no tiene productos disponibles.</p>
+      <p class="portal-empty">No tienes productos disponibles para vender.</p>
     {% endfor %}
 
-    <div class="form-actions" style="margin-top:12px;">
-      <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;">Continuar &rarr;</button>
-    </div>
+    {% if filas %}
+      <div class="form-actions" style="margin-top:12px;">
+        <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center; padding:14px; font-size:15.5px;">Continuar <i class="fas fa-arrow-right"></i></button>
+      </div>
+    {% endif %}
   </form>
 {% endblock %}

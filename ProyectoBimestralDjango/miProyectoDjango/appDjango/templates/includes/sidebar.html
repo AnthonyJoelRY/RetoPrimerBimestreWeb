@@ -1,21 +1,16 @@
 {% load static %}
-<!--
-=========================================================
-* Sidebar unico para los 4 roles (mayorista, vendedor, tienda, admin).
-* Cada bloque de enlaces solo se muestra si el usuario tiene ese perfil.
-=========================================================
--->
 <nav id="sidebarMenu" class="sidebar d-lg-block collapse">
   <div class="sidebar-inner px-3 pt-3">
-    <div class="d-flex align-items-center mb-3">
-      <a href="{% url 'portal_landing' %}" class="text-white text-decoration-none d-flex align-items-center">
-        <img src="{% static 'imagenes/logos_2.png' %}" alt="ISBEN Solution" style="height: 34px; width: auto;">
+
+    <div class="sidebar-marca">
+      <a href="{% url 'portal_landing' %}">
+        <img src="{% static 'imagenes/logos_2.png' %}" alt="ISBEN Solution">
       </a>
     </div>
 
     <ul class="nav flex-column">
       {% if user.perfil_mayorista %}
-        <li class="sidebar-heading text-secondary">Empresa</li>
+        <li class="sidebar-heading">Panel Mayorista</li>
         <li class="nav-item {% if 'mayorista_dashboard' in request.resolver_match.url_name %}active{% endif %}">
           <a href="{% url 'portal_mayorista_dashboard' %}" class="nav-link"><span class="sidebar-icon"><i class="fas fa-th-large"></i></span>Dashboard</a>
         </li>
@@ -43,7 +38,7 @@
       {% endif %}
 
       {% if user.perfil_vendedor %}
-        <li class="sidebar-heading text-secondary">Vendedor</li>
+        <li class="sidebar-heading">Panel Vendedor</li>
         <li class="nav-item {% if request.resolver_match.url_name == 'portal_vendedor_dashboard' %}active{% endif %}">
           <a href="{% url 'portal_vendedor_dashboard' %}" class="nav-link"><span class="sidebar-icon"><i class="fas fa-th-large"></i></span>Inicio</a>
         </li>
@@ -59,7 +54,7 @@
       {% endif %}
 
       {% if user.perfil_tienda %}
-        <li class="sidebar-heading text-secondary">Tienda</li>
+        <li class="sidebar-heading">Mi Tienda</li>
         <li class="nav-item {% if request.resolver_match.url_name == 'portal_tienda_marketplace' %}active{% endif %}">
           <a href="{% url 'portal_tienda_marketplace' %}" class="nav-link"><span class="sidebar-icon"><i class="fas fa-store"></i></span>Marketplace</a>
         </li>
@@ -72,7 +67,7 @@
       {% endif %}
 
       {% if user.is_staff %}
-        <li class="sidebar-heading text-secondary">Administrador</li>
+        <li class="sidebar-heading">Administración</li>
         <li class="nav-item {% if request.resolver_match.url_name == 'portal_admin_dashboard' %}active{% endif %}">
           <a href="{% url 'portal_admin_dashboard' %}" class="nav-link"><span class="sidebar-icon"><i class="fas fa-th-large"></i></span>Dashboard</a>
         </li>
@@ -90,7 +85,23 @@
 
     <div class="sidebar-user mt-auto pt-3">
       {% if user.is_authenticated %}
-        <div class="sidebar-user-email">{{ user.username }}</div>
+        <div class="sidebar-user-info">
+          <div class="sidebar-user-avatar">
+            {% if user.perfil_mayorista %}<i class="fas fa-industry"></i>
+            {% elif user.perfil_vendedor %}<i class="fas fa-user-tie"></i>
+            {% elif user.perfil_tienda %}<i class="fas fa-store"></i>
+            {% else %}<i class="fas fa-shield-alt"></i>{% endif %}
+          </div>
+          <div class="sidebar-user-datos">
+            <span class="sidebar-user-nombre">
+              {% if user.perfil_mayorista %}{{ user.perfil_mayorista.nombre }}
+              {% elif user.perfil_vendedor %}{{ user.perfil_vendedor.nombre }}
+              {% elif user.perfil_tienda %}{{ user.perfil_tienda.nombre }}
+              {% else %}Administrador{% endif %}
+            </span>
+            <span class="sidebar-user-email">{{ user.username }}</span>
+          </div>
+        </div>
         <a href="{% url 'portal_logout' %}" class="nav-link sidebar-logout">
           <span class="sidebar-icon"><i class="fas fa-sign-out-alt"></i></span>Cerrar sesión
         </a>

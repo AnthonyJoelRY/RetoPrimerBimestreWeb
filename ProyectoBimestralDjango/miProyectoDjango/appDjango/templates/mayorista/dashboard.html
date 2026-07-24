@@ -3,38 +3,82 @@
 {% block title %}Dashboard{% endblock %}
 
 {% block content %}
-  <div class="mb-4">
-    <h1 class="h4 mb-0">Dashboard</h1>
-    <p class="text-muted mb-0">Resumen de tu operación hoy.</p>
+  <div class="pagina-cabecera">
+    <div class="pagina-cabecera-titulo">
+      <div class="pagina-cabecera-icono"><i class="fas fa-th-large"></i></div>
+      <div>
+        <h1>Dashboard</h1>
+        <p class="subtitulo">Resumen de tu operación hoy, {{ request.mayorista.nombre }}.</p>
+      </div>
+    </div>
+    <div class="pagina-cabecera-acciones">
+      <span class="portal-badge portal-badge-gray"><i class="far fa-calendar"></i>&nbsp;{% now "l, j \d\e F" %}</span>
+    </div>
   </div>
 
   <div class="portal-grid">
-    <div class="stat-card">
+    <a href="{% url 'portal_mayorista_pedidos' %}?estado=pendiente" class="stat-card stat-card-link">
+      <div class="stat-card-icon stat-icon-naranja"><i class="fas fa-shopping-cart"></i></div>
       <h2>{{ pedidos_hoy }}</h2>
-      <p>Pedidos Hoy — pendientes de validar</p>
-    </div>
-    <div class="stat-card">
+      <p>Pedidos hoy pendientes de validar</p>
+    </a>
+
+    <a href="{% url 'portal_mayorista_reportes' %}" class="stat-card stat-card-link">
+      <div class="stat-card-icon stat-icon-dorado"><i class="fas fa-dollar-sign"></i></div>
       <h2>${{ ventas_mes|floatformat:2 }}</h2>
-      <p>Ventas del Mes</p>
-    </div>
-    <div class="stat-card">
+      <p>Ventas del mes</p>
+    </a>
+
+    <a href="{% url 'portal_mayorista_inventario' %}" class="stat-card stat-card-link {% if stock_critico > 0 %}stat-card-alerta{% endif %}">
+      <div class="stat-card-icon {% if stock_critico > 0 %}stat-icon-rojo{% else %}stat-icon-dorado{% endif %}"><i class="fas fa-exclamation-triangle"></i></div>
       <h2>{{ stock_critico }}</h2>
-      <p>Stock Crítico — productos agotándose</p>
-    </div>
-    <div class="stat-card">
+      <p>Productos con stock crítico</p>
+    </a>
+
+    <a href="{% url 'portal_mayorista_rendiciones' %}" class="stat-card stat-card-link">
+      <div class="stat-card-icon stat-icon-dorado"><i class="fas fa-file-invoice-dollar"></i></div>
       <h2>{{ rendiciones_pendientes }}</h2>
       <p>Rendiciones por confirmar</p>
-    </div>
+    </a>
   </div>
 
-  <div class="portal-grid" style="margin-top: 20px;">
-    <a href="{% url 'portal_mayorista_pedidos' %}" class="portal-list-card" style="text-decoration:none; display:block;">
-      <strong>Gestionar Pedidos</strong>
-      <p style="margin:4px 0 0; color:hsl(var(--muted-foreground)); font-size:13px;">Procesa los pedidos de tiendas y vendedores.</p>
-    </a>
-    <a href="{% url 'portal_mayorista_productos' %}" class="portal-list-card" style="text-decoration:none; display:block;">
-      <strong>Catálogo</strong>
-      <p style="margin:4px 0 0; color:hsl(var(--muted-foreground)); font-size:13px;">Gestiona tus productos, precios y stock.</p>
-    </a>
+  <div class="tarjeta-seccion" style="margin-top: 24px;">
+    <div class="tarjeta-seccion-cabecera">
+      <h2 class="h6 mb-0">Últimos pedidos</h2>
+      <a href="{% url 'portal_mayorista_pedidos' %}" class="btn btn-outline-primary btn-sm">Ver todos</a>
+    </div>
+
+    {% if ultimos_pedidos %}
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Tienda</th>
+            <th>Fecha</th>
+            <th>Estado</th>
+            <th class="text-end">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for pedido in ultimos_pedidos %}
+            <tr>
+              <td>{{ pedido.id }}</td>
+              <td>{{ pedido.tienda.nombre }}</td>
+              <td>{{ pedido.creado_en|date:"d M, H:i" }}</td>
+              <td>
+                {% if pedido.estado == 'entregado' %}<span class="badge bg-success">Entregado</span>
+                {% elif pedido.estado == 'en_camino' %}<span class="badge bg-secondary">En camino</span>
+                {% elif pedido.estado == 'validado' %}<span class="badge bg-primary">Validado</span>
+                {% elif pedido.estado == 'cancelado' %}<span class="badge bg-danger">Cancelado</span>
+                {% else %}<span class="badge bg-warning">Pendiente</span>{% endif %}
+              </td>
+              <td class="text-end"><strong>${{ pedido.total }}</strong></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="portal-empty mb-0">Todavía no tienes pedidos. Cuando una tienda o un vendedor cree uno, aparecerá aquí.</p>
+    {% endif %}
   </div>
 {% endblock %}

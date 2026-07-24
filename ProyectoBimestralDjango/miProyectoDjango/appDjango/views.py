@@ -2,7 +2,11 @@ from functools import wraps
 
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
-from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm, SetPasswordForm
+from django.contrib.auth.forms import (
+    AuthenticationForm,
+    PasswordChangeForm,
+    SetPasswordForm,
+)
 from django.contrib.auth.models import User, Group
 from django.db import transaction
 from django.db.models import Q, Sum
@@ -42,7 +46,11 @@ from appDjango.models import (
 
 # Formularios
 from appDjango.forms import (
+    AdminLoginForm,
+    AgregarCarritoForm,
+    LoginEmailForm,
     MayoristaRegistroForm,
+    PedidoVendedorPagoForm,
     TiendaRegistroForm,
     TiendaLoginForm,
     VendedorCrearForm,
@@ -59,10 +67,13 @@ CARRITO_TIENDA_SESSION_KEY = "tienda_carrito"
 
 # ===================== Decoradores de acceso por rol =====================
 
+
 def mayorista_required(view_func):
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
-        if not request.user.is_authenticated or not hasattr(request.user, "perfil_mayorista"):
+        if not request.user.is_authenticated or not hasattr(
+            request.user, "perfil_mayorista"
+        ):
             return redirect("portal_login_mayorista")
         request.mayorista = request.user.perfil_mayorista
         return view_func(request, *args, **kwargs)
@@ -73,7 +84,9 @@ def mayorista_required(view_func):
 def vendedor_required(view_func):
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
-        if not request.user.is_authenticated or not hasattr(request.user, "perfil_vendedor"):
+        if not request.user.is_authenticated or not hasattr(
+            request.user, "perfil_vendedor"
+        ):
             return redirect("portal_login_vendedor")
         vendedor = request.user.perfil_vendedor
         if vendedor.primer_login and view_func.__name__ != "vendedor_cambiar_password":
@@ -87,7 +100,9 @@ def vendedor_required(view_func):
 def tienda_required(view_func):
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
-        if not request.user.is_authenticated or not hasattr(request.user, "perfil_tienda"):
+        if not request.user.is_authenticated or not hasattr(
+            request.user, "perfil_tienda"
+        ):
             return redirect("portal_login_tienda")
         request.tienda = request.user.perfil_tienda
         return view_func(request, *args, **kwargs)
@@ -106,6 +121,7 @@ def admin_required(view_func):
 
 
 # ===================== Lógica compartida de creación de pedidos =====================
+
 
 def crear_pedido_validado(
     *,
@@ -133,7 +149,8 @@ def crear_pedido_validado(
                 raise ValueError("No hay stock suficiente de %s." % producto.nombre)
             if not producto.verificar_minimo_compra(linea["cantidad"]):
                 raise ValueError(
-                    "%s requiere un mínimo de %s unidades por pedido." % (producto.nombre, producto.minimo_compra)
+                    "%s requiere un mínimo de %s unidades por pedido."
+                    % (producto.nombre, producto.minimo_compra)
                 )
             productos_bloqueados[producto.id] = producto
 
@@ -178,6 +195,7 @@ def crear_pedido_validado(
 
 # ===================== Autenticación y landing =====================
 
+
 def landing(request):
     if request.user.is_authenticated:
         if hasattr(request.user, "perfil_mayorista"):
@@ -198,7 +216,10 @@ def registro_mayorista(request):
         if formulario.is_valid():
             mayorista = formulario.guardar()
             login(request, mayorista.cuenta)
-            messages.success(request, "Cuenta creada. Tu suscripción está pendiente de activación por el administrador.")
+            messages.success(
+                request,
+                "Cuenta creada. Tu suscripción está pendiente de activación por el administrador.",
+            )
             return redirect("portal_mayorista_dashboard")
     else:
         formulario = MayoristaRegistroForm()
@@ -223,15 +244,23 @@ def registro_tienda(request):
 def login_mayorista(request):
     error = None
     if request.method == "POST":
-        email = request.POST.get("email", "").lower()
-        password = request.POST.get("password", "")
-        user = authenticate(request, username=email, password=password)
-        if user is not None and hasattr(user, "perfil_mayorista"):
-            login(request, user)
-            return redirect("portal_mayorista_dashboard")
-        error = "Correo o contraseña incorrectos."
+        formulario = LoginEmailForm(request.POST)
+        if formulario.is_valid():
+            user = authenticate(
+                request,
+                username=formulario.cleaned_data["email"],
+                password=formulario.cleaned_data["password"],
+            )
+            if user is not None and hasattr(user, "perfil_mayorista"):
+                login(request, user)
+                return redirect("portal_mayorista_dashboard")
+            error = "Correo o contraseña incorrectos."
+    else:
+        formulario = LoginEmailForm()
 
-    return render(request, "auth/login_mayorista.html", {"error": error})
+    return render(
+        request, "auth/login_mayorista.html", {"formulario": formulario, "error": error}
+    )
 
 
 def login_tienda(request):
@@ -251,50 +280,64 @@ def login_tienda(request):
     else:
         formulario = TiendaLoginForm()
 
-    return render(request, "auth/login_tienda.html", {"formulario": formulario, "error": error})
+    return render(
+        request, "auth/login_tienda.html", {"formulario": formulario, "error": error}
+    )
 
 
 def login_vendedor(request):
     error = None
     if request.method == "POST":
-        email = request.POST.get("email", "").lower()
-        password = request.POST.get("password", "")
-        user = authenticate(request, username=email, password=password)
-        if user is not None and hasattr(user, "perfil_vendedor"):
-            login(request, user)
-            if user.perfil_vendedor.primer_login:
-                return redirect("portal_vendedor_cambiar_password")
-            return redirect("portal_vendedor_dashboard")
-        error = "Correo o contraseña incorrectos."
+        formulario = LoginEmailForm(request.POST)
+        if formulario.is_valid():
+            user = authenticate(
+                request,
+                username=formulario.cleaned_data["email"],
+                password=formulario.cleaned_data["password"],
+            )
+            if user is not None and hasattr(user, "perfil_vendedor"):
+                if not user.perfil_vendedor.activo:
+                    error = "Tu cuenta está desactivada. Contacta a tu mayorista."
+                else:
+                    login(request, user)
+                    if user.perfil_vendedor.primer_login:
+                        return redirect("portal_vendedor_cambiar_password")
+                    return redirect("portal_vendedor_dashboard")
+            else:
+                error = "Correo o contraseña incorrectos."
+    else:
+        formulario = LoginEmailForm()
 
-    return render(request, "auth/login_vendedor.html", {"error": error})
+    return render(
+        request, "auth/login_vendedor.html", {"formulario": formulario, "error": error}
+    )
 
 
 def login_admin(request):
     error = None
     if request.method == "POST":
-        formulario = AuthenticationForm(request=request, data=request.POST)
+        formulario = AdminLoginForm(request=request, data=request.POST)
         if formulario.is_valid():
-            username = formulario.cleaned_data.get("username")
-            password = formulario.cleaned_data.get("password")
-            user = authenticate(request, username=username, password=password)
-            if user is not None and user.is_staff:
+            user = formulario.get_user()
+            if user.is_staff:
                 login(request, user)
                 return redirect("portal_admin_dashboard")
             error = "Credenciales incorrectas o cuenta sin permisos de administrador."
     else:
-        formulario = AuthenticationForm()
+        formulario = AdminLoginForm()
 
-    return render(request, "auth/login_admin.html", {"formulario": formulario, "error": error})
+    return render(
+        request, "auth/login_admin.html", {"formulario": formulario, "error": error}
+    )
 
 
 def logout_portal(request):
     logout(request)
-    messages.info(request, "Has salido del sistema.")
     return redirect("portal_landing")
 
 
 # ===================== Mayorista =====================
+
 
 @mayorista_required
 def mayorista_dashboard(request):
@@ -304,12 +347,24 @@ def mayorista_dashboard(request):
     pedidos_qs = Pedido.objects.filter(mayorista=mayorista)
 
     contexto = {
-        "pedidos_hoy": pedidos_qs.filter(creado_en__date=hoy, estado="pendiente").count(),
+        "pedidos_hoy": pedidos_qs.filter(
+            creado_en__date=hoy, estado="pendiente"
+        ).count(),
         "ventas_mes": pedidos_qs.filter(
             creado_en__year=hoy.year, creado_en__month=hoy.month
-        ).exclude(estado="cancelado").aggregate(total=Sum("total"))["total"] or 0,
-        "stock_critico": Producto.objects.filter(mayorista=mayorista, activo=True, stock__lt=STOCK_CRITICO).count(),
-        "rendiciones_pendientes": Rendicion.objects.filter(mayorista=mayorista, estado="pendiente").count(),
+        )
+        .exclude(estado="cancelado")
+        .aggregate(total=Sum("total"))["total"]
+        or 0,
+        "stock_critico": Producto.objects.filter(
+            mayorista=mayorista, activo=True, stock__lt=STOCK_CRITICO
+        ).count(),
+        "rendiciones_pendientes": Rendicion.objects.filter(
+            mayorista=mayorista, estado="pendiente"
+        ).count(),
+        "ultimos_pedidos": pedidos_qs.select_related("tienda").order_by("-creado_en")[
+            :5
+        ],
     }
 
     return render(request, "mayorista/dashboard.html", contexto)
@@ -334,7 +389,11 @@ def mayorista_producto_crear(request):
     else:
         formulario = ProductoMayoristaForm()
 
-    return render(request, "mayorista/producto_form.html", {"formulario": formulario, "titulo": "Nuevo producto"})
+    return render(
+        request,
+        "mayorista/producto_form.html",
+        {"formulario": formulario, "titulo": "Nuevo producto"},
+    )
 
 
 @mayorista_required
@@ -350,7 +409,11 @@ def mayorista_producto_editar(request, id):
     else:
         formulario = ProductoMayoristaForm(instance=producto)
 
-    return render(request, "mayorista/producto_form.html", {"formulario": formulario, "titulo": "Editar producto"})
+    return render(
+        request,
+        "mayorista/producto_form.html",
+        {"formulario": formulario, "titulo": "Editar producto"},
+    )
 
 
 @mayorista_required
@@ -364,30 +427,57 @@ def mayorista_producto_eliminar(request, id):
 @mayorista_required
 def mayorista_inventario(request):
     if request.method == "POST":
-        producto = get_object_or_404(Producto, pk=request.POST.get("producto_id"), mayorista=request.mayorista)
+        producto = get_object_or_404(
+            Producto, pk=request.POST.get("producto_id"), mayorista=request.mayorista
+        )
         formulario = AjusteStockForm(request.POST)
         if formulario.is_valid():
             producto.stock = formulario.cleaned_data["stock"]
             producto.save(update_fields=["stock"])
-            messages.success(request, "Stock actualizado.")
+            messages.success(request, "Stock de %s actualizado." % producto.nombre)
         return redirect("portal_mayorista_inventario")
 
-    productos = Producto.objects.filter(mayorista=request.mayorista).order_by("nombre")
-    return render(request, "mayorista/inventario.html", {"productos": productos, "stock_critico": STOCK_CRITICO})
+    # Los productos con menos stock primero: lo urgente arriba
+    productos = Producto.objects.filter(mayorista=request.mayorista).order_by(
+        "stock", "nombre"
+    )
+
+    total_productos = productos.count()
+    criticos = productos.filter(stock__lt=STOCK_CRITICO).count()
+
+    return render(
+        request,
+        "mayorista/inventario.html",
+        {
+            "productos": productos,
+            "stock_critico": STOCK_CRITICO,
+            "total_productos": total_productos,
+            "criticos": criticos,
+        },
+    )
 
 
 @mayorista_required
 def mayorista_pedidos(request):
     estado = request.GET.get("estado", "")
-    pedidos = Pedido.objects.filter(mayorista=request.mayorista).select_related("tienda", "vendedor").order_by("-creado_en")
+    pedidos = (
+        Pedido.objects.filter(mayorista=request.mayorista)
+        .select_related("tienda", "vendedor")
+        .prefetch_related("items__producto")
+        .order_by("-creado_en")
+    )
     if estado:
         pedidos = pedidos.filter(estado=estado)
 
-    return render(request, "mayorista/pedidos.html", {
-        "pedidos": pedidos,
-        "estado_seleccionado": estado,
-        "estados": Pedido.ESTADO_CHOICES,
-    })
+    return render(
+        request,
+        "mayorista/pedidos.html",
+        {
+            "pedidos": pedidos,
+            "estado_seleccionado": estado,
+            "estados": Pedido.ESTADO_CHOICES,
+        },
+    )
 
 
 @mayorista_required
@@ -408,7 +498,9 @@ def mayorista_pedido_transicion(request, id, accion):
             pedido.estado = "cancelado"
             pedido.save(update_fields=["estado"])
         else:
-            messages.error(request, "No se puede aplicar esa acción al pedido en su estado actual.")
+            messages.error(
+                request, "No se puede aplicar esa acción al pedido en su estado actual."
+            )
             return redirect("portal_mayorista_pedidos")
 
     messages.success(request, "Pedido #%s actualizado." % pedido.id)
@@ -429,7 +521,8 @@ def mayorista_vendedor_crear(request):
             formulario.guardar()
             messages.success(
                 request,
-                "Vendedor creado. Contraseña inicial: %s (se le pedirá cambiarla al ingresar)." % VendedorCrearForm.CONTRASENA_INICIAL,
+                "Vendedor creado. Contraseña inicial: %s (se le pedirá cambiarla al ingresar)."
+                % VendedorCrearForm.CONTRASENA_INICIAL,
             )
             return redirect("portal_mayorista_vendedores")
     else:
@@ -443,13 +536,37 @@ def mayorista_vendedor_toggle(request, id):
     vendedor = get_object_or_404(Vendedor, pk=id, mayorista=request.mayorista)
     vendedor.activo = not vendedor.activo
     vendedor.save(update_fields=["activo"])
+
+    if vendedor.activo:
+        messages.success(
+            request, "%s fue reactivado y ya puede iniciar sesión." % vendedor.nombre
+        )
+    else:
+        messages.info(request, "%s fue desactivado." % vendedor.nombre)
+
     return redirect("portal_mayorista_vendedores")
 
 
 @mayorista_required
 def mayorista_rendiciones(request):
-    rendiciones = Rendicion.objects.filter(mayorista=request.mayorista).order_by("-id")
-    return render(request, "mayorista/rendiciones.html", {"rendiciones": rendiciones})
+    rendiciones = (
+        Rendicion.objects.filter(mayorista=request.mayorista)
+        .select_related("vendedor")
+        .order_by("-id")
+    )
+
+    pendientes_qs = rendiciones.filter(estado="pendiente")
+    total_pendiente = sum(r.calcular_total_neto() for r in pendientes_qs)
+
+    return render(
+        request,
+        "mayorista/rendiciones.html",
+        {
+            "rendiciones": rendiciones,
+            "pendientes": pendientes_qs.count(),
+            "total_pendiente": total_pendiente,
+        },
+    )
 
 
 @mayorista_required
@@ -461,13 +578,31 @@ def mayorista_rendicion_confirmar(request, id):
     return redirect("portal_mayorista_rendiciones")
 
 
+MESES_ES = [
+    "Ene",
+    "Feb",
+    "Mar",
+    "Abr",
+    "May",
+    "Jun",
+    "Jul",
+    "Ago",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dic",
+]
+
+
 @mayorista_required
 def mayorista_reportes(request):
     mayorista = request.mayorista
     pedidos_entregados = Pedido.objects.filter(mayorista=mayorista, estado="entregado")
 
     producto_estrella = (
-        PedidoItem.objects.filter(pedido__mayorista=mayorista, pedido__estado="entregado")
+        PedidoItem.objects.filter(
+            pedido__mayorista=mayorista, pedido__estado="entregado"
+        )
         .values("producto__nombre")
         .annotate(total_vendido=Sum("cantidad"))
         .order_by("-total_vendido")
@@ -489,7 +624,9 @@ def mayorista_reportes(request):
         .first()
     )
 
-    comisiones_pagadas = pedidos_entregados.aggregate(total=Sum("comision_plataforma"))["total"] or 0
+    comisiones_pagadas = (
+        pedidos_entregados.aggregate(total=Sum("comision_plataforma"))["total"] or 0
+    )
 
     hoy = timezone.now().date()
     ventas_por_mes = []
@@ -497,19 +634,34 @@ def mayorista_reportes(request):
         indice_mes = hoy.month - 1 - i
         anio = hoy.year + indice_mes // 12
         mes = indice_mes % 12 + 1
-        total = pedidos_entregados.filter(creado_en__year=anio, creado_en__month=mes).aggregate(total=Sum("total"))["total"] or 0
-        ventas_por_mes.append({"etiqueta": "%04d-%02d" % (anio, mes), "total": float(total)})
+        total = (
+            pedidos_entregados.filter(
+                creado_en__year=anio, creado_en__month=mes
+            ).aggregate(total=Sum("total"))["total"]
+            or 0
+        )
+        ventas_por_mes.append(
+            {
+                "etiqueta": "%s %d" % (MESES_ES[mes - 1], anio % 100),
+                "total": float(total),
+                "actual": (anio == hoy.year and mes == hoy.month),
+            }
+        )
 
     maximo = max((m["total"] for m in ventas_por_mes), default=0) or 1
 
-    return render(request, "mayorista/reportes.html", {
-        "producto_estrella": producto_estrella,
-        "mejor_tienda": mejor_tienda,
-        "mejor_vendedor": mejor_vendedor,
-        "comisiones_pagadas": comisiones_pagadas,
-        "ventas_por_mes": ventas_por_mes,
-        "maximo": maximo,
-    })
+    return render(
+        request,
+        "mayorista/reportes.html",
+        {
+            "producto_estrella": producto_estrella,
+            "mejor_tienda": mejor_tienda,
+            "mejor_vendedor": mejor_vendedor,
+            "comisiones_pagadas": comisiones_pagadas,
+            "ventas_por_mes": ventas_por_mes,
+            "maximo": maximo,
+        },
+    )
 
 
 @mayorista_required
@@ -524,10 +676,15 @@ def mayorista_mi_cuenta(request):
     else:
         formulario = PasswordChangeForm(user=request.user)
 
-    return render(request, "mayorista/mi_cuenta.html", {"formulario": formulario, "mayorista": request.mayorista})
+    return render(
+        request,
+        "mayorista/mi_cuenta.html",
+        {"formulario": formulario, "mayorista": request.mayorista},
+    )
 
 
 # ===================== Vendedor =====================
+
 
 def _productos_disponibles_vendedor(vendedor):
     if vendedor.tipo_perfil == "especializado" and vendedor.producto_asignado_id:
@@ -538,17 +695,48 @@ def _productos_disponibles_vendedor(vendedor):
 @vendedor_required
 def vendedor_dashboard(request):
     vendedor = request.vendedor
+    hoy = timezone.now().date()
 
-    por_cobrar = Pago.objects.filter(
-        pedido__vendedor=vendedor, metodo="efectivo", estado="pendiente"
-    ).aggregate(total=Sum("monto"))["total"] or 0
+    por_cobrar = (
+        Pago.objects.filter(
+            pedido__vendedor=vendedor, metodo="efectivo", estado="pendiente"
+        ).aggregate(total=Sum("monto"))["total"]
+        or 0
+    )
 
-    pedidos_activos = Pedido.objects.filter(vendedor=vendedor).exclude(estado__in=["entregado", "cancelado"]).count()
+    por_rendir = (
+        Pago.objects.filter(
+            pedido__vendedor=vendedor,
+            metodo="efectivo",
+            estado="confirmado",
+            rendicion__isnull=True,
+        ).aggregate(total=Sum("monto"))["total"]
+        or 0
+    )
 
-    return render(request, "vendedor/dashboard.html", {
-        "por_cobrar": por_cobrar,
-        "pedidos_activos": pedidos_activos,
-    })
+    pedidos_activos = (
+        Pedido.objects.filter(vendedor=vendedor)
+        .exclude(estado__in=["entregado", "cancelado"])
+        .count()
+    )
+
+    ventas_hoy = (
+        Pedido.objects.filter(vendedor=vendedor, creado_en__date=hoy)
+        .exclude(estado="cancelado")
+        .aggregate(total=Sum("total"))["total"]
+        or 0
+    )
+
+    return render(
+        request,
+        "vendedor/dashboard.html",
+        {
+            "por_cobrar": por_cobrar,
+            "por_rendir": por_rendir,
+            "pedidos_activos": pedidos_activos,
+            "ventas_hoy": ventas_hoy,
+        },
+    )
 
 
 @vendedor_required
@@ -561,7 +749,9 @@ def vendedor_cambiar_password(request):
             vendedor = request.user.perfil_vendedor
             vendedor.primer_login = False
             vendedor.save(update_fields=["primer_login"])
-            messages.success(request, "Contraseña actualizada. Ya puedes usar la plataforma.")
+            messages.success(
+                request, "Contraseña actualizada. Ya puedes usar la plataforma."
+            )
             return redirect("portal_vendedor_dashboard")
     else:
         formulario = SetPasswordForm(user=request.user)
@@ -575,9 +765,15 @@ def vendedor_pedido_paso1(request):
     busqueda = request.GET.get("q", "")
     tiendas = Tienda.objects.none()
     if busqueda:
-        tiendas = Tienda.objects.filter(Q(nombre__icontains=busqueda) | Q(telefono__icontains=busqueda))
+        tiendas = Tienda.objects.filter(
+            Q(nombre__icontains=busqueda) | Q(telefono__icontains=busqueda)
+        )
 
-    return render(request, "vendedor/pedido_paso1.html", {"busqueda": busqueda, "tiendas": tiendas})
+    return render(
+        request,
+        "vendedor/pedido_paso1.html",
+        {"busqueda": busqueda, "tiendas": tiendas},
+    )
 
 
 @vendedor_required
@@ -588,23 +784,56 @@ def vendedor_pedido_paso2(request, tienda_id):
 
     if request.method == "POST":
         nuevo_carrito = {}
+        errores = []
+
         for producto in productos:
-            cantidad = int(request.POST.get("cantidad_%s" % producto.id, 0) or 0)
-            if cantidad > 0:
+            crudo = request.POST.get("cantidad_%s" % producto.id, 0)
+            try:
+                cantidad = int(crudo or 0)
+            except (TypeError, ValueError):
+                cantidad = 0
+
+            if cantidad <= 0:
+                continue
+
+            if not producto.verificar_minimo_compra(cantidad):
+                errores.append(
+                    "%s requiere un mínimo de %s unidades."
+                    % (producto.nombre, producto.minimo_compra)
+                )
+            elif not producto.verificar_stock(cantidad):
+                errores.append(
+                    "Solo hay %s unidades de %s." % (producto.stock, producto.nombre)
+                )
+            else:
                 nuevo_carrito[str(producto.id)] = cantidad
-        request.session[CARRITO_VENDEDOR_SESSION_KEY] = nuevo_carrito
-        request.session["vendedor_tienda_id"] = tienda.id
+
+        if errores:
+            for error in errores:
+                messages.error(request, error)
+            return redirect("portal_vendedor_pedido_paso2", tienda_id=tienda.id)
+
         if not nuevo_carrito:
             messages.error(request, "Selecciona al menos un producto.")
             return redirect("portal_vendedor_pedido_paso2", tienda_id=tienda.id)
+
+        request.session[CARRITO_VENDEDOR_SESSION_KEY] = nuevo_carrito
+        request.session["vendedor_tienda_id"] = tienda.id
         return redirect("portal_vendedor_pedido_paso3")
 
-    filas = [{"producto": producto, "cantidad": carrito.get(str(producto.id), 0)} for producto in productos]
+    filas = [
+        {"producto": producto, "cantidad": carrito.get(str(producto.id), 0)}
+        for producto in productos
+    ]
 
-    return render(request, "vendedor/pedido_paso2.html", {
-        "tienda": tienda,
-        "filas": filas,
-    })
+    return render(
+        request,
+        "vendedor/pedido_paso2.html",
+        {
+            "tienda": tienda,
+            "filas": filas,
+        },
+    )
 
 
 @vendedor_required
@@ -624,31 +853,46 @@ def vendedor_pedido_paso3(request):
         producto = productos[int(producto_id)]
         subtotal = producto.precio * cantidad
         total += subtotal
-        lineas.append({"producto": producto, "cantidad": cantidad, "subtotal": subtotal})
+        lineas.append(
+            {"producto": producto, "cantidad": cantidad, "subtotal": subtotal}
+        )
 
     if request.method == "POST":
-        tipo_pago = request.POST.get("tipo_pago", "efectivo")
+        formulario = PedidoVendedorPagoForm(request.POST)
+        if formulario.is_valid():
+            try:
+                pedido = crear_pedido_validado(
+                    tienda=tienda,
+                    mayorista=request.vendedor.mayorista,
+                    vendedor=request.vendedor,
+                    creado_por="vendedor",
+                    tipo_pago=formulario.cleaned_data["tipo_pago"],
+                    lineas=lineas,
+                    telefono_contacto=tienda.telefono or "",
+                )
+            except ValueError as error:
+                messages.error(request, str(error))
+                return redirect("portal_vendedor_pedido_paso3")
 
-        try:
-            pedido = crear_pedido_validado(
-                tienda=tienda,
-                mayorista=request.vendedor.mayorista,
-                vendedor=request.vendedor,
-                creado_por="vendedor",
-                tipo_pago=tipo_pago,
-                lineas=lineas,
-                telefono_contacto=tienda.telefono or "",
+            request.session.pop(CARRITO_VENDEDOR_SESSION_KEY, None)
+            request.session.pop("vendedor_tienda_id", None)
+            messages.success(
+                request, "Pedido #%s registrado correctamente." % pedido.id
             )
-        except ValueError as error:
-            messages.error(request, str(error))
-            return redirect("portal_vendedor_pedido_paso3")
+            return redirect("portal_vendedor_dashboard")
+    else:
+        formulario = PedidoVendedorPagoForm()
 
-        request.session.pop(CARRITO_VENDEDOR_SESSION_KEY, None)
-        request.session.pop("vendedor_tienda_id", None)
-        messages.success(request, "Pedido #%s registrado correctamente." % pedido.id)
-        return redirect("portal_vendedor_dashboard")
-
-    return render(request, "vendedor/pedido_paso3.html", {"tienda": tienda, "lineas": lineas, "total": total})
+    return render(
+        request,
+        "vendedor/pedido_paso3.html",
+        {
+            "tienda": tienda,
+            "lineas": lineas,
+            "total": total,
+            "formulario": formulario,
+        },
+    )
 
 
 @vendedor_required
@@ -675,7 +919,10 @@ def vendedor_marcar_cobrado(request, pago_id):
 def vendedor_rendicion(request):
     vendedor = request.vendedor
     pagos_por_rendir = Pago.objects.filter(
-        pedido__vendedor=vendedor, metodo="efectivo", estado="confirmado", rendicion__isnull=True
+        pedido__vendedor=vendedor,
+        metodo="efectivo",
+        estado="confirmado",
+        rendicion__isnull=True,
     ).select_related("pedido")
 
     if request.method == "POST":
@@ -685,7 +932,9 @@ def vendedor_rendicion(request):
 
         with transaction.atomic():
             total_cobrado = pagos_por_rendir.aggregate(total=Sum("monto"))["total"] or 0
-            total_comision = sum((p.pedido.comision_plataforma for p in pagos_por_rendir), 0)
+            total_comision = sum(
+                (p.pedido.comision_plataforma for p in pagos_por_rendir), 0
+            )
 
             rendicion = Rendicion.objects.create(
                 vendedor=vendedor,
@@ -699,13 +948,18 @@ def vendedor_rendicion(request):
         return redirect("portal_vendedor_dashboard")
 
     total = pagos_por_rendir.aggregate(total=Sum("monto"))["total"] or 0
-    return render(request, "vendedor/rendicion.html", {"pagos": pagos_por_rendir, "total": total})
+    return render(
+        request, "vendedor/rendicion.html", {"pagos": pagos_por_rendir, "total": total}
+    )
 
 
 # ===================== Tienda =====================
 
+
 def _carrito_tienda(request):
-    return request.session.get(CARRITO_TIENDA_SESSION_KEY, {"mayorista_id": None, "items": {}})
+    return request.session.get(
+        CARRITO_TIENDA_SESSION_KEY, {"mayorista_id": None, "items": {}}
+    )
 
 
 @tienda_required
@@ -717,21 +971,46 @@ def tienda_marketplace(request):
 @tienda_required
 def tienda_catalogo(request, mayorista_id):
     mayorista = get_object_or_404(Mayorista, pk=mayorista_id, estado="activo")
-    productos = Producto.objects.filter(mayorista=mayorista, activo=True).order_by("nombre")
-    carrito = _carrito_tienda(request)
-    en_este_carrito = carrito["items"] if carrito.get("mayorista_id") == mayorista.id else {}
+    productos = Producto.objects.filter(mayorista=mayorista, activo=True).order_by(
+        "nombre"
+    )
 
-    return render(request, "tienda/catalogo.html", {
-        "mayorista": mayorista,
-        "productos": productos,
-        "carrito": en_este_carrito,
-    })
+    carrito = _carrito_tienda(request)
+    en_este_carrito = (
+        carrito["items"] if carrito.get("mayorista_id") == mayorista.id else {}
+    )
+
+    # Resumen para la barra flotante del carrito
+    carrito_unidades = sum(en_este_carrito.values())
+    precios = {str(p.id): p.precio for p in productos}
+    carrito_total = sum(
+        precios.get(pid, 0) * cantidad for pid, cantidad in en_este_carrito.items()
+    )
+
+    return render(
+        request,
+        "tienda/catalogo.html",
+        {
+            "mayorista": mayorista,
+            "productos": productos,
+            "carrito": en_este_carrito,
+            "carrito_unidades": carrito_unidades,
+            "carrito_total": carrito_total,
+        },
+    )
 
 
 @tienda_required
 def tienda_agregar_carrito(request, producto_id):
     producto = get_object_or_404(Producto, pk=producto_id, activo=True)
-    cantidad = int(request.POST.get("cantidad", producto.minimo_compra) or producto.minimo_compra)
+
+    formulario = AgregarCarritoForm(request.POST, producto=producto)
+    if not formulario.is_valid():
+        for error in formulario.errors["cantidad"]:
+            messages.error(request, error)
+        return redirect("portal_tienda_catalogo", mayorista_id=producto.mayorista_id)
+
+    cantidad = formulario.cleaned_data["cantidad"]
 
     carrito = _carrito_tienda(request)
     if carrito.get("mayorista_id") not in (None, producto.mayorista_id):
@@ -740,7 +1019,17 @@ def tienda_agregar_carrito(request, producto_id):
 
     carrito["mayorista_id"] = producto.mayorista_id
     items = carrito.get("items", {})
-    items[str(producto.id)] = items.get(str(producto.id), 0) + cantidad
+    nueva_cantidad = items.get(str(producto.id), 0) + cantidad
+
+    if not producto.verificar_stock(nueva_cantidad):
+        messages.error(
+            request,
+            "Ya tienes %s unidades en el carrito y solo hay %s disponibles."
+            % (items.get(str(producto.id), 0), producto.stock),
+        )
+        return redirect("portal_tienda_catalogo", mayorista_id=producto.mayorista_id)
+
+    items[str(producto.id)] = nueva_cantidad
     carrito["items"] = items
     request.session[CARRITO_TIENDA_SESSION_KEY] = carrito
 
@@ -752,23 +1041,35 @@ def tienda_agregar_carrito(request, producto_id):
 def tienda_carrito(request):
     carrito = _carrito_tienda(request)
     items = carrito.get("items", {})
+    productos = {p.id: p for p in Producto.objects.filter(pk__in=items.keys())}
 
     if request.method == "POST":
         for clave in list(items.keys()):
             accion = request.POST.get("accion_%s" % clave)
-            if accion == "quitar":
-                items.pop(clave, None)
-            elif accion == "sumar":
-                items[clave] += 1
-            elif accion == "restar":
-                items[clave] = max(0, items[clave] - 1)
-                if items[clave] == 0:
+            producto = productos.get(int(clave))
+            if producto is None or accion == "quitar":
+                if accion == "quitar" or producto is None:
                     items.pop(clave, None)
+                continue
+            if accion == "sumar":
+                if producto.verificar_stock(items[clave] + 1):
+                    items[clave] += 1
+                else:
+                    messages.error(request, "No hay más stock de %s." % producto.nombre)
+            elif accion == "restar":
+                if items[clave] - 1 < producto.minimo_compra:
+                    items.pop(clave, None)
+                    messages.info(
+                        request,
+                        "%s se quitó del carrito (compra mínima: %s)."
+                        % (producto.nombre, producto.minimo_compra),
+                    )
+                else:
+                    items[clave] -= 1
         carrito["items"] = items
         request.session[CARRITO_TIENDA_SESSION_KEY] = carrito
         return redirect("portal_tienda_carrito")
 
-    productos = {p.id: p for p in Producto.objects.filter(pk__in=items.keys())}
     lineas = []
     total = 0
     for producto_id, cantidad in items.items():
@@ -777,7 +1078,9 @@ def tienda_carrito(request):
             continue
         subtotal = producto.precio * cantidad
         total += subtotal
-        lineas.append({"producto": producto, "cantidad": cantidad, "subtotal": subtotal})
+        lineas.append(
+            {"producto": producto, "cantidad": cantidad, "subtotal": subtotal}
+        )
 
     return render(request, "tienda/carrito.html", {"lineas": lineas, "total": total})
 
@@ -793,7 +1096,11 @@ def tienda_entrega(request):
         return redirect("portal_tienda_marketplace")
 
     productos = {p.id: p for p in Producto.objects.filter(pk__in=items.keys())}
-    lineas = [{"producto": productos[int(pid)], "cantidad": cantidad} for pid, cantidad in items.items() if int(pid) in productos]
+    lineas = [
+        {"producto": productos[int(pid)], "cantidad": cantidad}
+        for pid, cantidad in items.items()
+        if int(pid) in productos
+    ]
     total = sum((linea["producto"].precio * linea["cantidad"] for linea in lineas), 0)
 
     if request.method == "POST":
@@ -819,18 +1126,24 @@ def tienda_entrega(request):
             request.session.pop(CARRITO_TIENDA_SESSION_KEY, None)
             return redirect("portal_tienda_confirmacion", pedido_id=pedido.id)
     else:
-        formulario = PedidoEntregaForm(initial={
-            "telefono_contacto": request.tienda.telefono or "",
-            "lat": request.tienda.lat,
-            "lng": request.tienda.lng,
-        })
+        formulario = PedidoEntregaForm(
+            initial={
+                "telefono_contacto": request.tienda.telefono or "",
+                "lat": request.tienda.lat,
+                "lng": request.tienda.lng,
+            }
+        )
 
-    return render(request, "tienda/entrega.html", {
-        "formulario": formulario,
-        "mayorista": mayorista,
-        "lineas": lineas,
-        "total": total,
-    })
+    return render(
+        request,
+        "tienda/entrega.html",
+        {
+            "formulario": formulario,
+            "mayorista": mayorista,
+            "lineas": lineas,
+            "total": total,
+        },
+    )
 
 
 @tienda_required
@@ -841,26 +1154,59 @@ def tienda_confirmacion(request, pedido_id):
 
 @tienda_required
 def tienda_mis_pedidos(request):
-    pedidos = Pedido.objects.filter(tienda=request.tienda).select_related("mayorista").order_by("-creado_en")
-    return render(request, "tienda/mis_pedidos.html", {"pedidos": pedidos})
+    filtro = request.GET.get("filtro", "todos")
+
+    pedidos = (
+        Pedido.objects.filter(tienda=request.tienda)
+        .select_related("mayorista")
+        .prefetch_related("items__producto")
+        .order_by("-creado_en")
+    )
+
+    if filtro == "en_curso":
+        pedidos = pedidos.filter(estado__in=["pendiente", "validado", "en_camino"])
+    elif filtro == "entregados":
+        pedidos = pedidos.filter(estado="entregado")
+
+    return render(
+        request,
+        "tienda/mis_pedidos.html",
+        {
+            "pedidos": pedidos,
+            "filtro": filtro,
+        },
+    )
 
 
 # ===================== Administrador =====================
+
 
 @admin_required
 def admin_dashboard(request):
     hoy = timezone.now().date()
 
-    pedidos_mes = Pedido.objects.filter(creado_en__year=hoy.year, creado_en__month=hoy.month).exclude(estado="cancelado")
+    pedidos_mes = Pedido.objects.filter(
+        creado_en__year=hoy.year, creado_en__month=hoy.month
+    ).exclude(estado="cancelado")
 
-    ingresos_suscripciones = Mayorista.objects.filter(estado="activo", plan__in=["suscripcion", "mixto"]).aggregate(
-        total=Sum("tarifa_anual")
-    )["total"] or 0
-    ingresos_comisiones = pedidos_mes.filter(estado="entregado").aggregate(total=Sum("comision_plataforma"))["total"] or 0
+    ingresos_suscripciones = (
+        Mayorista.objects.filter(
+            estado="activo", plan__in=["suscripcion", "mixto"]
+        ).aggregate(total=Sum("tarifa_anual"))["total"]
+        or 0
+    )
+    ingresos_comisiones = (
+        pedidos_mes.filter(estado="entregado").aggregate(
+            total=Sum("comision_plataforma")
+        )["total"]
+        or 0
+    )
 
     contexto = {
         "mayoristas_activos": Mayorista.objects.filter(estado="activo").count(),
-        "pendientes_activacion": Mayorista.objects.filter(estado="pendiente_pago").count(),
+        "pendientes_activacion": Mayorista.objects.filter(
+            estado="pendiente_pago"
+        ).count(),
         "pedidos_mes": pedidos_mes.count(),
         "ingresos_estimados": (ingresos_suscripciones / 12) + ingresos_comisiones,
     }
@@ -870,8 +1216,21 @@ def admin_dashboard(request):
 
 @admin_required
 def admin_mayoristas(request):
-    mayoristas = Mayorista.objects.order_by("-id")
-    return render(request, "admin/mayoristas.html", {"mayoristas": mayoristas})
+    estado = request.GET.get("estado", "")
+
+    mayoristas = Mayorista.objects.select_related("cuenta").order_by("-id")
+    if estado:
+        mayoristas = mayoristas.filter(estado=estado)
+
+    return render(
+        request,
+        "admin/mayoristas.html",
+        {
+            "mayoristas": mayoristas,
+            "estado": estado,
+            "pendientes": Mayorista.objects.filter(estado="pendiente_pago").count(),
+        },
+    )
 
 
 @admin_required
@@ -879,7 +1238,11 @@ def admin_mayorista_toggle(request, id):
     mayorista = get_object_or_404(Mayorista, pk=id)
     mayorista.estado = "suspendido" if mayorista.estado == "activo" else "activo"
     mayorista.save(update_fields=["estado"])
-    messages.success(request, "%s ahora está %s." % (mayorista.nombre, mayorista.get_estado_display().lower()))
+    messages.success(
+        request,
+        "%s ahora está %s."
+        % (mayorista.nombre, mayorista.get_estado_display().lower()),
+    )
     return redirect("portal_admin_mayoristas")
 
 
@@ -901,15 +1264,44 @@ def admin_configuracion(request):
 
 @admin_required
 def admin_suscripciones(request):
-    return render(request, "admin/suscripciones.html")
+    hoy = timezone.now().date()
+
+    suscripciones = (
+        Mayorista.objects.filter(plan__in=["suscripcion", "mixto"])
+        .select_related("cuenta")
+        .order_by("fecha_vencimiento")
+    )
+
+    ingresos_anuales = (
+        suscripciones.filter(estado="activo").aggregate(total=Sum("tarifa_anual"))[
+            "total"
+        ]
+        or 0
+    )
+    por_vencer = suscripciones.filter(
+        estado="activo", fecha_vencimiento__isnull=False, fecha_vencimiento__lt=hoy
+    ).count()
+
+    return render(
+        request,
+        "admin/suscripciones.html",
+        {
+            "suscripciones": suscripciones,
+            "ingresos_anuales": ingresos_anuales,
+            "por_vencer": por_vencer,
+            "hoy": hoy,
+        },
+    )
 
 
 # ===================== API REST (Django REST Framework) =====================
+
 
 class UserViewSet(viewsets.ModelViewSet):
     """
     API endpoint que permite ver o editar usuarios.
     """
+
     queryset = User.objects.all().order_by("-date_joined")
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -919,6 +1311,7 @@ class GroupViewSet(viewsets.ModelViewSet):
     """
     API endpoint que permite ver o editar grupos.
     """
+
     queryset = Group.objects.all()
     serializer_class = GroupSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -928,6 +1321,7 @@ class MayoristaViewSet(viewsets.ModelViewSet):
     """
     API endpoint para listar, crear, editar y eliminar mayoristas.
     """
+
     queryset = Mayorista.objects.all()
     serializer_class = MayoristaSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -937,6 +1331,7 @@ class VendedorViewSet(viewsets.ModelViewSet):
     """
     API endpoint para listar, crear, editar y eliminar vendedores.
     """
+
     queryset = Vendedor.objects.all()
     serializer_class = VendedorSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -946,6 +1341,7 @@ class TiendaViewSet(viewsets.ModelViewSet):
     """
     API endpoint para listar, crear, editar y eliminar tiendas.
     """
+
     queryset = Tienda.objects.all()
     serializer_class = TiendaSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -955,6 +1351,7 @@ class ProductoViewSet(viewsets.ModelViewSet):
     """
     API endpoint para listar, crear, editar y eliminar productos.
     """
+
     queryset = Producto.objects.all()
     serializer_class = ProductoSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -964,6 +1361,7 @@ class PedidoViewSet(viewsets.ModelViewSet):
     """
     API endpoint para listar, crear, editar y eliminar pedidos.
     """
+
     queryset = Pedido.objects.all()
     serializer_class = PedidoSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -973,6 +1371,7 @@ class PedidoItemViewSet(viewsets.ModelViewSet):
     """
     API endpoint para listar, crear, editar y eliminar ítems de pedido.
     """
+
     queryset = PedidoItem.objects.all()
     serializer_class = PedidoItemSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -982,6 +1381,7 @@ class PagoViewSet(viewsets.ModelViewSet):
     """
     API endpoint para listar, crear, editar y eliminar pagos.
     """
+
     queryset = Pago.objects.all()
     serializer_class = PagoSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -991,6 +1391,7 @@ class RendicionViewSet(viewsets.ModelViewSet):
     """
     API endpoint para listar, crear, editar y eliminar rendiciones.
     """
+
     queryset = Rendicion.objects.all()
     serializer_class = RendicionSerializer
     permission_classes = [permissions.IsAuthenticated]

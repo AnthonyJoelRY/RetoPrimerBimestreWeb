@@ -3,14 +3,17 @@
 {% block title %}Productos{% endblock %}
 
 {% block content %}
-  <div class="mb-4">
-    <h1 class="h4 mb-0">Catálogo de Productos</h1>
-    <p class="text-muted mb-0">Gestiona tus productos, precios y stock inicial.</p>
-  </div>
-
-  <div class="page-header">
-    <span></span>
-    <a href="{% url 'portal_mayorista_producto_crear' %}" class="btn btn-primary">+ Nuevo Producto</a>
+  <div class="pagina-cabecera">
+    <div class="pagina-cabecera-titulo">
+      <div class="pagina-cabecera-icono"><i class="fas fa-box"></i></div>
+      <div>
+        <h1>Catálogo de Productos</h1>
+        <p class="subtitulo">Gestiona tus productos, precios y stock inicial.</p>
+      </div>
+    </div>
+    <div class="pagina-cabecera-acciones">
+      <a href="{% url 'portal_mayorista_producto_crear' %}" class="btn btn-primary"><i class="fas fa-plus"></i> Nuevo Producto</a>
+    </div>
   </div>
 
   <div class="portal-grid">
@@ -28,7 +31,10 @@
           {% if not producto.activo %}<span class="portal-badge portal-badge-gray">Inactivo</span>{% endif %}
           <div class="form-actions" style="margin-top:10px;">
             <a href="{% url 'portal_mayorista_producto_editar' producto.id %}" class="btn btn-outline">Editar</a>
-            <a href="{% url 'portal_mayorista_producto_eliminar' producto.id %}" class="action action-delete" onclick="return confirm('¿Eliminar este producto?')">Eliminar</a>
+            <a href="{% url 'portal_mayorista_producto_eliminar' producto.id %}"
+               class="action action-delete"
+               data-confirmar="¿Eliminar {{ producto.nombre }}?"
+               data-confirmar-texto="El producto desaparecerá del catálogo de las tiendas.">Eliminar</a>
           </div>
         </div>
       </div>

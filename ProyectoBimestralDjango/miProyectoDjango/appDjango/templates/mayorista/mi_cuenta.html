@@ -3,34 +3,62 @@
 {% block title %}Mi Cuenta{% endblock %}
 
 {% block content %}
-  <div class="mb-4">
-    <h1 class="h4 mb-0">Mi Cuenta</h1>
-    <p class="text-muted mb-0">Información de la empresa y configuración.</p>
-  </div>
-
-  <div class="detail-card" style="margin-bottom:20px;">
-    <table>
-      <tr><th>Empresa</th><td>{{ mayorista.nombre }}</td></tr>
-      <tr><th>Correo</th><td>{{ mayorista.cuenta.email }}</td></tr>
-      <tr><th>Categoría</th><td>{{ mayorista.get_categoria_display }}</td></tr>
-      <tr><th>Plan actual</th><td>{{ mayorista.get_plan_display }}</td></tr>
-      <tr><th>Estado</th><td>
-        {% if mayorista.estado == 'activo' %}<span class="portal-badge portal-badge-green">Activo</span>
-        {% elif mayorista.estado == 'suspendido' %}<span class="portal-badge portal-badge-red">Suspendido</span>
-        {% else %}<span class="portal-badge portal-badge-amber">Pendiente de pago</span>{% endif %}
-      </td></tr>
-      <tr><th>Vencimiento suscripción</th><td>{{ mayorista.fecha_vencimiento|default:"N/A" }}</td></tr>
-    </table>
-  </div>
-
-  <div class="form-card">
-    <h3 style="margin-top:0;">Cambiar Contraseña</h3>
-    <form method="post">
-      {% csrf_token %}
-      {{ formulario.as_p }}
-      <div class="form-actions">
-        <button type="submit" class="btn btn-primary">Cambiar Contraseña</button>
+  <div class="pagina-cabecera">
+    <div class="pagina-cabecera-titulo">
+      <div class="pagina-cabecera-icono"><i class="fas fa-cog"></i></div>
+      <div>
+        <h1>Mi Cuenta</h1>
+        <p class="subtitulo">Información de la empresa y configuración.</p>
       </div>
-    </form>
+    </div>
+  </div>
+
+  <div class="cuenta-grid">
+    <div class="detail-card">
+      <table>
+        <tr><th>Empresa</th><td>{{ mayorista.nombre }}</td></tr>
+        <tr><th>Correo</th><td>{{ mayorista.cuenta.email }}</td></tr>
+        <tr><th>Categoría</th><td>{{ mayorista.get_categoria_display }}</td></tr>
+        <tr><th>Plan actual</th><td>{{ mayorista.get_plan_display }}</td></tr>
+        <tr><th>Estado</th><td>
+          {% if mayorista.estado == 'activo' %}<span class="portal-badge portal-badge-green">Activo</span>
+          {% elif mayorista.estado == 'suspendido' %}<span class="portal-badge portal-badge-red">Suspendido</span>
+          {% else %}<span class="portal-badge portal-badge-amber">Pendiente de pago</span>{% endif %}
+        </td></tr>
+        <tr><th>Vencimiento suscripción</th><td>{{ mayorista.fecha_vencimiento|default:"No aplica" }}</td></tr>
+      </table>
+    </div>
+
+    <div class="form-card">
+      <h3 style="margin-top:0;"><i class="fas fa-key" style="color:var(--isben-naranja);"></i> Cambiar Contraseña</h3>
+
+      {% if formulario.non_field_errors %}
+        <div class="login-isben-error">{{ formulario.non_field_errors.0 }}</div>
+      {% endif %}
+
+      <form method="post">
+        {% csrf_token %}
+
+        <div class="campo-grupo">
+          {{ formulario.old_password.label_tag }}
+          {{ formulario.old_password }}
+          {% if formulario.old_password.errors %}<div class="campo-error">{{ formulario.old_password.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div class="campo-grupo">
+          {{ formulario.new_password1.label_tag }}
+          {{ formulario.new_password1 }}
+          {% if formulario.new_password1.errors %}<div class="campo-error">{{ formulario.new_password1.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div class="campo-grupo">
+          {{ formulario.new_password2.label_tag }}
+          {{ formulario.new_password2 }}
+          {% if formulario.new_password2.errors %}<div class="campo-error">{{ formulario.new_password2.errors.0 }}</div>{% endif %}
+        </div>
+
+        <button type="submit" class="btn btn-primary">Guardar nueva contraseña</button>
+      </form>
+    </div>
   </div>
 {% endblock %}

@@ -3,9 +3,26 @@
 {% block title %}Mayoristas{% endblock %}
 
 {% block content %}
-  <div class="mb-4">
-    <h1 class="h4 mb-0">Empresas Mayoristas</h1>
-    <p class="text-muted mb-0">Gestión de cuentas y activaciones.</p>
+  <div class="pagina-cabecera">
+    <div class="pagina-cabecera-titulo">
+      <div class="pagina-cabecera-icono"><i class="fas fa-building"></i></div>
+      <div>
+        <h1>Empresas Mayoristas</h1>
+        <p class="subtitulo">Activa, suspende y controla quién opera en la plataforma.</p>
+      </div>
+    </div>
+    <div class="pagina-cabecera-acciones">
+      {% if pendientes > 0 %}
+        <span class="portal-badge portal-badge-amber"><i class="fas fa-user-clock"></i>&nbsp;{{ pendientes }} por activar</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="filtro-tabs">
+    <a href="{% url 'portal_admin_mayoristas' %}" class="filtro-tab {% if not estado %}activo{% endif %}">Todos</a>
+    <a href="{% url 'portal_admin_mayoristas' %}?estado=pendiente_pago" class="filtro-tab {% if estado == 'pendiente_pago' %}activo{% endif %}">Pendientes</a>
+    <a href="{% url 'portal_admin_mayoristas' %}?estado=activo" class="filtro-tab {% if estado == 'activo' %}activo{% endif %}">Activos</a>
+    <a href="{% url 'portal_admin_mayoristas' %}?estado=suspendido" class="filtro-tab {% if estado == 'suspendido' %}activo{% endif %}">Suspendidos</a>
   </div>
 
   <div class="table-card">
@@ -16,7 +33,12 @@
       <tbody>
         {% for mayorista in mayoristas %}
           <tr>
-            <td><strong>{{ mayorista.nombre }}</strong></td>
+            <td>
+              <div class="vendedor-cabecera" style="margin-bottom:0;">
+                <div class="vendedor-avatar" style="width:38px; height:38px; font-size:14px; border-radius:11px;">{{ mayorista.nombre|slice:":2"|upper }}</div>
+                <strong>{{ mayorista.nombre }}</strong>
+              </div>
+            </td>
             <td>{{ mayorista.cuenta.email }}</td>
             <td>{{ mayorista.get_plan_display }}</td>
             <td>
@@ -26,13 +48,18 @@
             </td>
             <td>{{ mayorista.cuenta.date_joined|date:"d M Y" }}</td>
             <td>
-              <a href="{% url 'portal_admin_mayorista_toggle' mayorista.id %}" class="action {% if mayorista.estado == 'activo' %}action-delete{% else %}action-view{% endif %}">
-                {% if mayorista.estado == 'activo' %}Suspender{% else %}Activar{% endif %}
-              </a>
+              {% if mayorista.estado == 'activo' %}
+                <a href="{% url 'portal_admin_mayorista_toggle' mayorista.id %}"
+                   class="action action-delete"
+                   data-confirmar="¿Suspender a {{ mayorista.nombre }}?"
+                   data-confirmar-texto="La empresa, sus vendedores y su catálogo dejarán de estar disponibles hasta que la reactives.">Suspender</a>
+              {% else %}
+                <a href="{% url 'portal_admin_mayorista_toggle' mayorista.id %}" class="action action-view">Activar</a>
+              {% endif %}
             </td>
           </tr>
         {% empty %}
-          <tr><td colspan="6">No hay mayoristas registrados.</td></tr>
+          <tr><td colspan="6">No hay mayoristas {% if estado %}en este estado{% else %}registrados{% endif %}.</td></tr>
         {% endfor %}
       </tbody>
     </table>

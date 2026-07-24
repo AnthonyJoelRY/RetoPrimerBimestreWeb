@@ -3,36 +3,53 @@
 {% block title %}Rendiciones{% endblock %}
 
 {% block content %}
-  <div class="mb-4">
-    <h1 class="h4 mb-0">Rendiciones</h1>
-    <p class="text-muted mb-0">Revisa los cobros en efectivo depositados por tus vendedores.</p>
+  <div class="pagina-cabecera">
+    <div class="pagina-cabecera-titulo">
+      <div class="pagina-cabecera-icono"><i class="fas fa-file-invoice-dollar"></i></div>
+      <div>
+        <h1>Rendiciones</h1>
+        <p class="subtitulo">Revisa los cobros en efectivo depositados por tus vendedores.</p>
+      </div>
+    </div>
+    <div class="pagina-cabecera-acciones">
+      {% if pendientes > 0 %}
+        <span class="portal-badge portal-badge-amber"><i class="fas fa-clock"></i>&nbsp;{{ pendientes }} pendiente{{ pendientes|pluralize }} · ${{ total_pendiente|floatformat:2 }}</span>
+      {% else %}
+        <span class="portal-badge portal-badge-green"><i class="fas fa-check"></i>&nbsp;Todo confirmado</span>
+      {% endif %}
+    </div>
   </div>
 
   {% for rendicion in rendiciones %}
     <div class="portal-list-card">
       <div class="portal-list-card-row">
-        <div>
-          <strong>{{ rendicion.vendedor.nombre }}</strong>
-          <div style="font-size:12px; color:hsl(var(--muted-foreground));">{{ rendicion.creado_en|date:"d M Y, H:i" }}</div>
+        <div class="vendedor-cabecera" style="margin-bottom:0;">
+          <div class="vendedor-avatar">{{ rendicion.vendedor.nombre|first|upper }}</div>
+          <div>
+            <strong>{{ rendicion.vendedor.nombre }}</strong>
+            <div style="font-size:12px; color:hsl(var(--muted-foreground));">{{ rendicion.creado_en|date:"d M Y, H:i" }}</div>
+          </div>
         </div>
-        {% if rendicion.estado == 'confirmado' %}
-          <span class="portal-badge portal-badge-green">Confirmado</span>
-        {% else %}
-          <span class="portal-badge portal-badge-amber">Pendiente</span>
-        {% endif %}
+        <div style="display:flex; align-items:center; gap:10px;">
+          {% if rendicion.estado == 'confirmado' %}
+            <span class="portal-badge portal-badge-green">Confirmado</span>
+          {% else %}
+            <span class="portal-badge portal-badge-amber">Pendiente</span>
+            <a href="{% url 'portal_mayorista_rendicion_confirmar' rendicion.id %}"
+               class="btn btn-primary"
+               data-confirmar="¿Confirmar la rendición de {{ rendicion.vendedor.nombre }}?"
+               data-confirmar-texto="Confirmas haber recibido ${{ rendicion.calcular_total_neto }} en efectivo.">Confirmar</a>
+          {% endif %}
+        </div>
       </div>
-      <div class="portal-list-card-row" style="margin-top:8px;">
-        <div style="font-size:13px;">
-          Cobrado: <strong>${{ rendicion.total_cobrado }}</strong> ·
-          Comisión: ${{ rendicion.total_comision }} ·
-          Neto: <strong>${{ rendicion.calcular_total_neto }}</strong>
-        </div>
-        {% if rendicion.estado == 'pendiente' %}
-          <a href="{% url 'portal_mayorista_rendicion_confirmar' rendicion.id %}" class="btn btn-primary">Confirmar</a>
-        {% endif %}
+
+      <div class="rendicion-montos">
+        <div class="rendicion-monto"><small>Cobrado</small><strong>${{ rendicion.total_cobrado }}</strong></div>
+        <div class="rendicion-monto"><small>Comisión plataforma</small><strong>${{ rendicion.total_comision }}</strong></div>
+        <div class="rendicion-monto"><small>Neto a recibir</small><strong class="neto">${{ rendicion.calcular_total_neto }}</strong></div>
       </div>
     </div>
   {% empty %}
-    <p class="portal-empty">No hay rendiciones.</p>
+    <p class="portal-empty">No hay rendiciones. Aparecerán cuando tus vendedores rindan sus cobros en efectivo.</p>
   {% endfor %}
 {% endblock %}

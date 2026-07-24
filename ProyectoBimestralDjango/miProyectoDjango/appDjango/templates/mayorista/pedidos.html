@@ -3,19 +3,25 @@
 {% block title %}Pedidos{% endblock %}
 
 {% block content %}
-  <div class="mb-4">
-    <h1 class="h4 mb-0">Gestión de Pedidos</h1>
-    <p class="text-muted mb-0">Procesa los pedidos de tiendas y vendedores.</p>
+  <div class="pagina-cabecera">
+    <div class="pagina-cabecera-titulo">
+      <div class="pagina-cabecera-icono"><i class="fas fa-shopping-cart"></i></div>
+      <div>
+        <h1>Gestión de Pedidos</h1>
+        <p class="subtitulo">Procesa los pedidos de tiendas y vendedores.</p>
+      </div>
+    </div>
+    <div class="pagina-cabecera-acciones">
+      <form method="get">
+        <select name="estado" onchange="this.form.submit()">
+          <option value="">Todos los estados</option>
+          {% for valor, etiqueta in estados %}
+            <option value="{{ valor }}" {% if estado_seleccionado == valor %}selected{% endif %}>{{ etiqueta }}</option>
+          {% endfor %}
+        </select>
+      </form>
+    </div>
   </div>
-
-  <form method="get" style="margin-bottom:16px;">
-    <select name="estado" onchange="this.form.submit()">
-      <option value="">Todos los estados</option>
-      {% for valor, etiqueta in estados %}
-        <option value="{{ valor }}" {% if estado_seleccionado == valor %}selected{% endif %}>{{ etiqueta }}</option>
-      {% endfor %}
-    </select>
-  </form>
 
   {% for pedido in pedidos %}
     <div class="portal-list-card">
@@ -31,6 +37,7 @@
         </div>
         <strong>${{ pedido.total }}</strong>
       </div>
+
       <div class="portal-list-card-row" style="margin-top:8px;">
         <div>
           <div><strong>{{ pedido.tienda.nombre }}</strong></div>
@@ -40,11 +47,30 @@
         <div class="form-actions">
           {% if pedido.estado == 'validado' %}
             <a href="{% url 'portal_mayorista_pedido_transicion' pedido.id 'enviar_ruta' %}" class="btn btn-primary">Enviar a Ruta</a>
-            <a href="{% url 'portal_mayorista_pedido_transicion' pedido.id 'cancelar' %}" class="action action-delete" onclick="return confirm('¿Cancelar este pedido?')">Cancelar Pedido</a>
+            <a href="{% url 'portal_mayorista_pedido_transicion' pedido.id 'cancelar' %}"
+               class="action action-delete"
+               data-confirmar="¿Cancelar el pedido #{{ pedido.id }}?"
+               data-confirmar-texto="El stock de los productos será devuelto al inventario.">Cancelar Pedido</a>
           {% elif pedido.estado == 'en_camino' %}
             <a href="{% url 'portal_mayorista_pedido_transicion' pedido.id 'marcar_entregado' %}" class="btn btn-primary">Marcar Entregado</a>
           {% endif %}
         </div>
+      </div>
+
+      <div class="pedido-items">
+        <div class="pedido-items-titulo">Productos ({{ pedido.items.count }})
+          {% if pedido.tipo_pago == 'efectivo' %}
+            <span class="badge bg-warning">Efectivo</span>
+          {% else %}
+            <span class="badge bg-primary">Pago digital</span>
+          {% endif %}
+        </div>
+        {% for item in pedido.items.all %}
+          <div class="pedido-item-linea">
+            <span><strong>{{ item.cantidad }}x</strong> {{ item.producto.nombre }}</span>
+            <span>${{ item.subtotal }}</span>
+          </div>
+        {% endfor %}
       </div>
     </div>
   {% empty %}

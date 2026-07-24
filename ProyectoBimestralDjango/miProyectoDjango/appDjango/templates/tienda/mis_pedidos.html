@@ -3,27 +3,65 @@
 {% block title %}Mis Pedidos{% endblock %}
 
 {% block content %}
-  <h2>Mis Pedidos</h2>
+  <div class="pagina-cabecera">
+    <div class="pagina-cabecera-titulo">
+      <div class="pagina-cabecera-icono"><i class="fas fa-receipt"></i></div>
+      <div>
+        <h1>Mis Pedidos</h1>
+        <p class="subtitulo">Sigue el estado de tus compras.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="filtro-tabs">
+    <a href="{% url 'portal_tienda_mis_pedidos' %}" class="filtro-tab {% if filtro == 'todos' %}activo{% endif %}">Todos</a>
+    <a href="{% url 'portal_tienda_mis_pedidos' %}?filtro=en_curso" class="filtro-tab {% if filtro == 'en_curso' %}activo{% endif %}"><i class="fas fa-truck"></i> En curso</a>
+    <a href="{% url 'portal_tienda_mis_pedidos' %}?filtro=entregados" class="filtro-tab {% if filtro == 'entregados' %}activo{% endif %}"><i class="fas fa-check"></i> Entregados</a>
+  </div>
 
   {% for pedido in pedidos %}
     <div class="portal-list-card">
       <div class="portal-list-card-row">
         <div>
           <strong>{{ pedido.mayorista.nombre }}</strong>
-          <div style="font-size:12px; color:hsl(var(--muted-foreground));">{{ pedido.creado_en|date:"d M Y, H:i" }}</div>
+          <div style="font-size:12px; color:hsl(var(--muted-foreground));">#{{ pedido.id }} · {{ pedido.creado_en|date:"d M Y, H:i" }}</div>
         </div>
-        <strong>${{ pedido.total }}</strong>
+        <strong style="color:var(--isben-naranja); font-size:17px;">${{ pedido.total }}</strong>
       </div>
+
       <div class="portal-list-card-row" style="margin-top:6px;">
-        {% if pedido.estado == 'entregado' %}<span class="portal-badge portal-badge-green">Entregado</span>
-        {% elif pedido.estado == 'en_camino' %}<span class="portal-badge portal-badge-amber">En Camino</span>
-        {% elif pedido.estado == 'validado' %}<span class="portal-badge portal-badge-gray">Preparando</span>
-        {% elif pedido.estado == 'cancelado' %}<span class="portal-badge portal-badge-red">Cancelado</span>
-        {% else %}<span class="portal-badge portal-badge-gray">Pendiente</span>{% endif %}
-        <span style="font-size:12px; color:hsl(var(--muted-foreground));">{{ pedido.get_tipo_pago_display }}</span>
+        <div>
+          {% if pedido.estado == 'entregado' %}<span class="portal-badge portal-badge-green"><i class="fas fa-check"></i>&nbsp;Entregado</span>
+          {% elif pedido.estado == 'en_camino' %}<span class="portal-badge portal-badge-amber"><i class="fas fa-truck"></i>&nbsp;En camino</span>
+          {% elif pedido.estado == 'validado' %}<span class="portal-badge portal-badge-gray"><i class="fas fa-box-open"></i>&nbsp;Preparando</span>
+          {% elif pedido.estado == 'cancelado' %}<span class="portal-badge portal-badge-red">Cancelado</span>
+          {% else %}<span class="portal-badge portal-badge-gray">Pendiente</span>{% endif %}
+          <span style="font-size:12px; color:hsl(var(--muted-foreground));">{{ pedido.get_tipo_pago_display }}</span>
+        </div>
+      </div>
+
+      <div class="pedido-productos">
+        {% for item in pedido.items.all %}
+          <div class="pedido-producto-linea">
+            {% if item.producto.foto_url %}
+              <img src="{{ item.producto.foto_url }}" alt="">
+            {% else %}
+              <div class="mini-vacia"><i class="fas fa-box"></i></div>
+            {% endif %}
+            <span class="cantidad">{{ item.cantidad }}x</span>
+            <span>{{ item.producto.nombre }}</span>
+            <span class="subtotal">${{ item.subtotal }}</span>
+          </div>
+        {% endfor %}
       </div>
     </div>
   {% empty %}
-    <p class="portal-empty">Aún no has hecho pedidos.</p>
+    {% if filtro == 'en_curso' %}
+      <p class="portal-empty">No tienes pedidos en curso.</p>
+    {% elif filtro == 'entregados' %}
+      <p class="portal-empty">Todavía no tienes pedidos entregados.</p>
+    {% else %}
+      <p class="portal-empty">Aún no has hecho pedidos. Entra al marketplace y haz el primero.</p>
+    {% endif %}
   {% endfor %}
 {% endblock %}

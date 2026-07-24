@@ -1,33 +1,43 @@
 {% extends 'layouts/base-fullscreen.html' %}
 {% load static %}
 
-{% block title %}Acceso Mayorista{% endblock %}
+{% block title %}Acceso Mayorista · ISBEN Solution{% endblock %}
 
 {% block content %}
-  <div class="portal-public-wrap ">
-    <div class="portal-public-card">
-  <img src="{% static 'imagenes/logos_1.png' %}" alt="ISBEN Solution" style="width: 120px; margin-bottom: 12px;">
-  <h1>Acceso Mayorista</h1>
-  <p class="subtitle">¿No tienes cuenta? <a href="{% url 'portal_registro_mayorista' %}">Regístrate aquí</a></p>
+  <div class="login-isben">
+    <img src="{% static 'imagenes/iso_1.png' %}" alt="" class="login-isben-watermark" aria-hidden="true">
 
-  {% if error %}<p class="error">{{ error }}</p>{% endif %}
+    <div class="login-isben-card">
+      <img src="{% static 'imagenes/logos_2.png' %}" alt="ISBEN Solution" class="login-isben-logo">
 
-  <form method="post">
-    {% csrf_token %}
-    <p>
-      <label for="email">Correo electrónico</label>
-      <input type="email" id="email" name="email" required>
-    </p>
-    <p>
-      <label for="password">Contraseña</label>
-      <input type="password" id="password" name="password" required>
-    </p>
-    <div class="form-actions">
-      <button type="submit" class="btn btn-primary">Ingresar al Panel</button>
-    </div>
-  </form>
+      <div class="login-rol-chip rol-icono-naranja"><i class="fas fa-industry"></i></div>
 
-  <a href="{% url 'portal_landing' %}" class="portal-public-back">&larr; Volver</a>
+      <h1>Acceso Mayorista</h1>
+      <p class="subtitle">¿No tienes cuenta? <a href="{% url 'portal_registro_mayorista' %}">Regístrate aquí</a></p>
+
+      {% if error %}<div class="login-isben-error"><i class="fas fa-exclamation-circle"></i> {{ error }}</div>{% endif %}
+
+      <form method="post">
+        {% csrf_token %}
+
+        <div class="campo-icono">
+          <i class="fas fa-envelope"></i>
+          {{ formulario.email }}
+          {% if formulario.email.errors %}<div class="campo-error">{{ formulario.email.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div class="campo-icono">
+          <i class="fas fa-lock"></i>
+          {{ formulario.password }}
+          {% if formulario.password.errors %}<div class="campo-error">{{ formulario.password.errors.0 }}</div>{% endif %}
+        </div>
+
+        <button type="submit" class="login-isben-btn">Ingresar al Panel</button>
+      </form>
+
+      <a href="{% url 'portal_landing' %}" class="login-isben-volver"><i class="fas fa-arrow-left"></i> Volver al inicio</a>
+
+      <div class="login-isben-pie">Innovamos, diseñamos y desarrollamos · ISBEN Solution</div>
     </div>
   </div>
 {% endblock %}

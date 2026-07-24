@@ -1,24 +1,65 @@
 {% extends 'layouts/base-fullscreen.html' %}
 {% load static %}
 
-{% block title %}Registrar mi tienda{% endblock %}
+{% block title %}Registra tu tienda · ISBEN Solution{% endblock %}
 
 {% block content %}
-  <div class="portal-public-wrap ">
-    <div class="portal-public-card">
-  <img src="{% static 'imagenes/logos_1.png' %}" alt="ISBEN Solution" style="width: 120px; margin-bottom: 12px;">
-  <h1>Registra tu tienda</h1>
-  <p class="subtitle">Compra a mayoristas cerca de ti en pocos pasos</p>
+  <div class="login-isben">
+    <img src="{% static 'imagenes/iso_1.png' %}" alt="" class="login-isben-watermark" aria-hidden="true">
 
-  <form method="post">
-    {% csrf_token %}
-    {{ formulario.as_p }}
-    <div class="form-actions">
-      <button type="submit" class="btn btn-primary">Registrar mi tienda</button>
-    </div>
-  </form>
+    <div class="login-isben-card login-isben-card-ancha">
+      <img src="{% static 'imagenes/logos_2.png' %}" alt="ISBEN Solution" class="login-isben-logo">
 
-  <a href="{% url 'portal_login_tienda' %}" class="portal-public-back">&larr; Ya tengo cuenta</a>
+      <div class="login-rol-chip rol-icono-dorado"><i class="fas fa-store"></i></div>
+
+      <h1>Registra tu tienda</h1>
+      <p class="subtitle">Compra a mayoristas cerca de ti en pocos pasos</p>
+
+      {% if formulario.non_field_errors %}
+        <div class="login-isben-error">{{ formulario.non_field_errors.0 }}</div>
+      {% endif %}
+
+      <form method="post">
+        {% csrf_token %}
+
+        <div class="campo-grupo">
+          {{ formulario.nombre.label_tag }}
+          {{ formulario.nombre }}
+          {% if formulario.nombre.errors %}<div class="campo-error">{{ formulario.nombre.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div class="campo-grupo">
+          {{ formulario.telefono.label_tag }}
+          {{ formulario.telefono }}
+          {% if formulario.telefono.errors %}<div class="campo-error">{{ formulario.telefono.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div class="campo-fila">
+          <div class="campo-grupo">
+            {{ formulario.pin.label_tag }}
+            {{ formulario.pin }}
+            {% if formulario.pin.errors %}<div class="campo-error">{{ formulario.pin.errors.0 }}</div>{% endif %}
+          </div>
+
+          <div class="campo-grupo">
+            {{ formulario.pin_confirmacion.label_tag }}
+            {{ formulario.pin_confirmacion }}
+            {% if formulario.pin_confirmacion.errors %}<div class="campo-error">{{ formulario.pin_confirmacion.errors.0 }}</div>{% endif %}
+          </div>
+        </div>
+
+        <div class="campo-grupo">
+          {{ formulario.direccion_texto.label_tag }}
+          {{ formulario.direccion_texto }}
+          {% if formulario.direccion_texto.errors %}<div class="campo-error">{{ formulario.direccion_texto.errors.0 }}</div>{% endif %}
+        </div>
+
+        <button type="submit" class="login-isben-btn">Registrar mi tienda</button>
+      </form>
+
+      <a href="{% url 'portal_login_tienda' %}" class="login-isben-volver"><i class="fas fa-arrow-left"></i> Ya tengo cuenta</a>
+
+      <div class="login-isben-pie">Innovamos, diseñamos y desarrollamos · ISBEN Solution</div>
     </div>
   </div>
 {% endblock %}

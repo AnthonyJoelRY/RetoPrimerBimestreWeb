@@ -1,25 +1,41 @@
 {% extends 'layouts/base-fullscreen.html' %}
 {% load static %}
 
-{% block title %}Administración ISBEN Solution{% endblock %}
+{% block title %}Administración · ISBEN Solution{% endblock %}
 
 {% block content %}
-  <div class="portal-public-wrap portal-public-dark">
-    <div class="portal-public-card">
-  <img src="{% static 'imagenes/logos_1.png' %}" alt="ISBEN Solution" style="width: 120px; margin-bottom: 12px;">
-  <h1>Administración ISBEN Solution</h1>
+  <div class="login-isben login-isben-admin">
+    <img src="{% static 'imagenes/iso_1.png' %}" alt="" class="login-isben-watermark" aria-hidden="true">
 
-  {% if error %}<p class="error">{{ error }}</p>{% endif %}
+    <div class="login-isben-card">
+      <img src="{% static 'imagenes/logos_2.png' %}" alt="ISBEN Solution" class="login-isben-logo">
 
-  <form method="post">
-    {% csrf_token %}
-    {{ formulario.as_p }}
-    <div class="form-actions">
-      <button type="submit" class="btn btn-primary">Acceder</button>
-    </div>
-  </form>
+      <div class="login-rol-chip rol-icono-dorado"><i class="fas fa-shield-alt"></i></div>
 
-  <a href="{% url 'portal_landing' %}" class="portal-public-back">&larr; Volver</a>
+      <h1>Administración</h1>
+      <p class="subtitle">Acceso exclusivo para el operador de la plataforma</p>
+
+      {% if error %}<div class="login-isben-error"><i class="fas fa-exclamation-circle"></i> {{ error }}</div>{% endif %}
+
+      <form method="post">
+        {% csrf_token %}
+
+        <div class="campo-icono">
+          <i class="fas fa-user-shield"></i>
+          {{ formulario.username }}
+        </div>
+
+        <div class="campo-icono">
+          <i class="fas fa-lock"></i>
+          {{ formulario.password }}
+        </div>
+
+        <button type="submit" class="login-isben-btn">Acceder</button>
+      </form>
+
+      <a href="{% url 'portal_landing' %}" class="login-isben-volver"><i class="fas fa-arrow-left"></i> Volver al inicio</a>
+
+      <div class="login-isben-pie">Innovamos, diseñamos y desarrollamos · ISBEN Solution</div>
     </div>
   </div>
 {% endblock %}

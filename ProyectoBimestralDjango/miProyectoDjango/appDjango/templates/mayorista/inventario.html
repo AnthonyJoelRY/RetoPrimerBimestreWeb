@@ -3,23 +3,50 @@
 {% block title %}Inventario{% endblock %}
 
 {% block content %}
-  <div class="mb-4">
-    <h1 class="h4 mb-0">Control de Inventario</h1>
-    <p class="text-muted mb-0">Ajuste manual de stock por producto.</p>
+  <div class="pagina-cabecera">
+    <div class="pagina-cabecera-titulo">
+      <div class="pagina-cabecera-icono"><i class="fas fa-warehouse"></i></div>
+      <div>
+        <h1>Control de Inventario</h1>
+        <p class="subtitulo">Ajuste manual de stock por producto. Lo más urgente aparece primero.</p>
+      </div>
+    </div>
+    <div class="pagina-cabecera-acciones">
+      <span class="portal-badge portal-badge-gray">{{ total_productos }} producto{{ total_productos|pluralize }}</span>
+      {% if criticos > 0 %}
+        <span class="portal-badge portal-badge-red"><i class="fas fa-exclamation-triangle"></i>&nbsp;{{ criticos }} en estado crítico</span>
+      {% else %}
+        <span class="portal-badge portal-badge-green"><i class="fas fa-check"></i>&nbsp;Sin alertas de stock</span>
+      {% endif %}
+    </div>
   </div>
 
   <div class="table-card">
     <table>
       <thead>
-        <tr><th>Producto</th><th>Estado</th><th>Ajustar Stock</th></tr>
+        <tr><th>Producto</th><th>Nivel de stock</th><th>Ajustar</th></tr>
       </thead>
       <tbody>
         {% for producto in productos %}
-          <tr>
-            <td>{{ producto.nombre }}</td>
+          <tr {% if producto.stock < stock_critico %}class="fila-critica"{% endif %}>
+            <td>
+              <div class="inv-producto">
+                {% if producto.foto_url %}
+                  <img src="{{ producto.foto_url }}" alt="" class="inv-foto">
+                {% else %}
+                  <div class="inv-foto inv-foto-vacia"><i class="fas fa-box"></i></div>
+                {% endif %}
+                <div>
+                  <strong>{{ producto.nombre }}</strong>
+                  <div class="inv-meta">${{ producto.precio }} · {{ producto.get_unidad_display }}{% if not producto.activo %} · <span class="portal-badge portal-badge-gray">Inactivo</span>{% endif %}</div>
+                </div>
+              </div>
+            </td>
             <td>
               {% if producto.stock < stock_critico %}
                 <span class="portal-badge portal-badge-red">Agotándose ({{ producto.stock }})</span>
+              {% elif producto.stock < 20 %}
+                <span class="portal-badge portal-badge-amber">Bajo ({{ producto.stock }})</span>
               {% else %}
                 <span class="portal-badge portal-badge-green">Normal ({{ producto.stock }})</span>
               {% endif %}

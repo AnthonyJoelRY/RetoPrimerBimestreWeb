@@ -1,14 +1,4 @@
 {% extends "layouts/master.html" %}
-
-<!--
-=========================================================
-* Layout CON sidebar/navbar (dashboard interno)
-* Un unico layout para los 4 roles (mayorista, vendedor, tienda, admin);
-  el sidebar decide que enlaces mostrar segun el rol del usuario.
-* Hereda todo el <head> de master.html
-=========================================================
--->
-
 {% block body %}
 
     {% include 'includes/sidebar.html' %}
@@ -20,7 +10,7 @@
       {% if messages %}
         <ul class="messages">
           {% for message in messages %}
-            <li>{{ message }}</li>
+            <li class="{{ message.tags }}">{{ message }}</li>
           {% endfor %}
         </ul>
       {% endif %}
@@ -28,6 +18,81 @@
       {% block content %}{% endblock content %}
 
       {% include 'includes/settings-box.html' %}
+
+      <!-- Modal de confirmación compartido -->
+      <div class="modal-isben-fondo" id="modalConfirmar">
+        <div class="modal-isben">
+          <div class="modal-isben-icono"><i class="fas fa-exclamation-triangle"></i></div>
+          <h3 id="modalConfirmarTitulo">¿Estás seguro?</h3>
+          <p id="modalConfirmarTexto">Esta acción no se puede deshacer.</p>
+          <div class="modal-isben-botones">
+            <button type="button" class="modal-isben-cancelar" id="modalConfirmarCancelar">Cancelar</button>
+            <a href="#" class="modal-isben-confirmar" id="modalConfirmarAceptar">Sí, continuar</a>
+          </div>
+        </div>
+      </div>
+
+      <script>
+        (function () {
+          var fondo = document.getElementById("modalConfirmar");
+          var titulo = document.getElementById("modalConfirmarTitulo");
+          var texto = document.getElementById("modalConfirmarTexto");
+          var aceptar = document.getElementById("modalConfirmarAceptar");
+          var cancelar = document.getElementById("modalConfirmarCancelar");
+          var formPendiente = null;
+
+          document.addEventListener("click", function (e) {
+            var disparador = e.target.closest("[data-confirmar]");
+            if (!disparador) return;
+
+            e.preventDefault();
+            titulo.textContent = disparador.getAttribute("data-confirmar") || "¿Estás seguro?";
+            texto.textContent = disparador.getAttribute("data-confirmar-texto") || "Esta acción no se puede deshacer.";
+
+            if (disparador.tagName === "BUTTON" && disparador.form) {
+              formPendiente = disparador.form;
+              aceptar.href = "#";
+            } else {
+              formPendiente = null;
+              aceptar.href = disparador.href;
+            }
+
+            fondo.classList.add("abierto");
+          });
+
+          aceptar.addEventListener("click", function (e) {
+            if (formPendiente) {
+              e.preventDefault();
+              fondo.classList.remove("abierto");
+              formPendiente.submit();
+              formPendiente = null;
+            }
+          });
+
+          function cerrar() {
+            fondo.classList.remove("abierto");
+            formPendiente = null;
+          }
+
+          cancelar.addEventListener("click", cerrar);
+          fondo.addEventListener("click", function (e) { if (e.target === fondo) cerrar(); });
+          document.addEventListener("keydown", function (e) { if (e.key === "Escape") cerrar(); });
+
+          // Fotos de producto que no cargan → placeholder con icono
+          document.addEventListener("error", function (e) {
+            var img = e.target;
+            if (img.tagName !== "IMG") return;
+            if (!img.closest(".cat-card, .portal-product-card, .linea-carrito, .inv-producto, .pedido-minis, .pedido-producto-linea, .preview-producto")) return;
+
+            var caja = document.createElement("div");
+            caja.className = "img-rota";
+            caja.style.width = window.getComputedStyle(img).width;
+            caja.style.height = window.getComputedStyle(img).height !== "auto" ? window.getComputedStyle(img).height : "170px";
+            caja.innerHTML = '<i class="fas fa-image"></i>';
+            img.replaceWith(caja);
+          }, true);
+        })();
+      </script>
 
       {% include 'includes/footer.html' %}
 

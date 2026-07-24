@@ -3,34 +3,52 @@
 {% block title %}Tu Pedido{% endblock %}
 
 {% block content %}
-  <h2>Tu Pedido</h2>
+  <div class="pagina-cabecera">
+    <div class="pagina-cabecera-titulo">
+      <div class="pagina-cabecera-icono"><i class="fas fa-shopping-basket"></i></div>
+      <div>
+        <h1>Tu Pedido</h1>
+        <p class="subtitulo">Revisa las cantidades antes de confirmar.</p>
+      </div>
+    </div>
+  </div>
 
   {% if lineas %}
     <form method="post">
       {% csrf_token %}
       {% for linea in lineas %}
         <div class="portal-list-card portal-list-card-row">
-          <div>
-            <strong>{{ linea.producto.nombre }}</strong>
-            <div style="font-size:13px; color:hsl(var(--muted-foreground));">${{ linea.producto.precio }}</div>
+          <div class="linea-carrito">
+            {% if linea.producto.foto_url %}
+              <img src="{{ linea.producto.foto_url }}" alt="">
+            {% else %}
+              <div class="linea-foto-vacia"><i class="fas fa-box"></i></div>
+            {% endif %}
+            <div class="linea-datos">
+              <strong>{{ linea.producto.nombre }}</strong>
+              <div style="font-size:13px; color:hsl(var(--muted-foreground));">${{ linea.producto.precio }} c/u · Subtotal: <strong>${{ linea.subtotal }}</strong></div>
+            </div>
           </div>
           <div class="portal-qty-control">
-            <button type="submit" name="accion_{{ linea.producto.id }}" value="restar">-</button>
-            <span>{{ linea.cantidad }}</span>
-            <button type="submit" name="accion_{{ linea.producto.id }}" value="sumar">+</button>
-            <button type="submit" name="accion_{{ linea.producto.id }}" value="quitar" title="Quitar">&#128465;</button>
+            <button type="submit" name="accion_{{ linea.producto.id }}" value="restar" title="Quitar una">-</button>
+            <span style="font-weight:700;">{{ linea.cantidad }}</span>
+            <button type="submit" name="accion_{{ linea.producto.id }}" value="sumar" title="Agregar una">+</button>
+            <button type="submit" name="accion_{{ linea.producto.id }}" value="quitar" title="Quitar del carrito">&#128465;</button>
           </div>
         </div>
       {% endfor %}
     </form>
 
-    <div class="portal-list-card portal-list-card-row">
-      <strong>Total</strong>
-      <strong>${{ total }}</strong>
+    <div class="portal-list-card portal-list-card-row" style="background:#FFF3DC;">
+      <strong style="font-size:16px;">Total</strong>
+      <strong style="font-size:20px; color:var(--isben-naranja);">${{ total }}</strong>
     </div>
-    <a href="{% url 'portal_tienda_entrega' %}" class="btn btn-primary" style="width:100%; justify-content:center; margin-top:10px;">PEDIR &#128722;</a>
+
+    <a href="{% url 'portal_tienda_entrega' %}" class="btn btn-primary" style="width:100%; justify-content:center; margin-top:12px; padding:15px; font-size:16px;">
+      Continuar con la entrega <i class="fas fa-arrow-right"></i>
+    </a>
   {% else %}
     <p class="portal-empty">Tu carrito está vacío.</p>
-    <a href="{% url 'portal_tienda_marketplace' %}" class="btn btn-primary" style="width:100%; justify-content:center;">Ver mayoristas</a>
+    <a href="{% url 'portal_tienda_marketplace' %}" class="btn btn-primary" style="width:100%; justify-content:center;">Ver proveedores</a>
   {% endif %}
 {% endblock %}

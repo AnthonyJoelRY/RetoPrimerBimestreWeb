@@ -7,48 +7,62 @@
 {% endblock %}
 
 {% block content %}
-  <h2>Entrega y Pago</h2>
+  <div class="pagina-cabecera">
+    <div class="pagina-cabecera-titulo">
+      <div class="pagina-cabecera-icono"><i class="fas fa-truck"></i></div>
+      <div>
+        <h1>Entrega y Pago</h1>
+        <p class="subtitulo">Pedido a {{ mayorista.nombre }} · último paso.</p>
+      </div>
+    </div>
+  </div>
 
   <div class="detail-card" style="margin-bottom:14px;">
     <table>
       {% for linea in lineas %}
         <tr><td>{{ linea.cantidad }}x {{ linea.producto.nombre }}</td></tr>
       {% endfor %}
-      <tr><th>Total</th><td style="text-align:right; font-weight:700;">${{ total }}</td></tr>
+      <tr><th>Total</th><td style="text-align:right; font-weight:700; color:var(--isben-naranja);">${{ total }}</td></tr>
     </table>
   </div>
 
-  <p style="font-size:13px; font-weight:600; margin-bottom:6px;">Marca el punto de entrega en el mapa</p>
+  {% if formulario.non_field_errors %}
+    <div class="login-isben-error">{{ formulario.non_field_errors.0 }}</div>
+  {% endif %}
+
+  <p style="font-size:13px; font-weight:700; margin-bottom:6px;"><i class="fas fa-map-marker-alt" style="color:var(--isben-naranja);"></i> Marca el punto de entrega en el mapa</p>
   <div id="portal-map"></div>
 
   <form method="post" id="entrega-form">
     {% csrf_token %}
-    <input type="hidden" name="lat" id="id_lat" value="{{ formulario.lat.value|default:'' }}">
-    <input type="hidden" name="lng" id="id_lng" value="{{ formulario.lng.value|default:'' }}">
+    {{ formulario.lat }}
+    {{ formulario.lng }}
 
-    <p>
-      <label for="id_telefono_contacto">Teléfono de contacto</label>
-      <input type="text" name="telefono_contacto" id="id_telefono_contacto" value="{{ formulario.telefono_contacto.value|default:'' }}" required>
-    </p>
+    <div class="campo-grupo">
+      {{ formulario.telefono_contacto.label_tag }}
+      {{ formulario.telefono_contacto }}
+      {% if formulario.telefono_contacto.errors %}<div class="campo-error">{{ formulario.telefono_contacto.errors.0 }}</div>{% endif %}
+    </div>
 
     <button type="button" id="btn-mic" class="portal-mic-btn">&#127908; Dictar nota de entrega</button>
-    <p>
-      <label for="id_nota_voz">Nota para la entrega (opcional)</label>
-      <textarea name="nota_voz" id="id_nota_voz" rows="2">{{ formulario.nota_voz.value|default:'' }}</textarea>
-    </p>
+    <div class="campo-grupo">
+      {{ formulario.nota_voz.label_tag }}
+      {{ formulario.nota_voz }}
+      {% if formulario.nota_voz.errors %}<div class="campo-error">{{ formulario.nota_voz.errors.0 }}</div>{% endif %}
+    </div>
 
-    <h3>Método de Pago</h3>
-    <label class="portal-list-card" style="display:flex; align-items:center; gap:10px; cursor:pointer;">
-      <input type="radio" name="tipo_pago" value="efectivo" checked> Pagar en efectivo al recibir
-    </label>
-    <label class="portal-list-card" style="display:flex; align-items:center; gap:10px; cursor:pointer;">
-      <input type="radio" name="tipo_pago" value="digital"> Pagar ahora (tarjeta / transferencia)
-    </label>
+    <h3 style="font-size:16px;">{{ formulario.tipo_pago.label }}</h3>
+    {% for radio in formulario.tipo_pago %}
+      <label class="pago-opcion">
+        {{ radio.tag }}
+        {% if radio.data.value == "efectivo" %}<i class="fas fa-money-bill-wave" style="color:var(--isben-dorado-oscuro);"></i>{% else %}<i class="fas fa-credit-card" style="color:var(--isben-naranja);"></i>{% endif %}
+        {{ radio.choice_label }}
+      </label>
+    {% endfor %}
+    {% if formulario.tipo_pago.errors %}<div class="campo-error">{{ formulario.tipo_pago.errors.0 }}</div>{% endif %}
 
-    {% if formulario.errors %}<p class="error">Revisa los datos: falta marcar la ubicación en el mapa u otro campo obligatorio.</p>{% endif %}
-
-    <div class="form-actions" style="margin-top:12px;">
-      <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;">Confirmar Pedido</button>
+    <div class="form-actions" style="margin-top:14px;">
+      <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center; padding:15px; font-size:16px;">Confirmar Pedido</button>
     </div>
   </form>
 {% endblock %}

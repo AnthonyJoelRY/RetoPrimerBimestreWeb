@@ -1,26 +1,42 @@
 {% extends 'layouts/base-fullscreen.html' %}
 {% load static %}
 
-{% block title %}Ingreso a tu Tienda{% endblock %}
+{% block title %}Ingreso a tu Tienda · ISBEN Solution{% endblock %}
 
 {% block content %}
-  <div class="portal-public-wrap ">
-    <div class="portal-public-card">
-  <img src="{% static 'imagenes/logos_1.png' %}" alt="ISBEN Solution" style="width: 120px; margin-bottom: 12px;">
-  <h1>Ingreso a tu Tienda</h1>
-  <p class="subtitle">¿No tienes cuenta? <a href="{% url 'portal_registro_tienda' %}">Regístrate aquí</a></p>
+  <div class="login-isben">
+    <img src="{% static 'imagenes/iso_1.png' %}" alt="" class="login-isben-watermark" aria-hidden="true">
 
-  {% if error %}<p class="error">{{ error }}</p>{% endif %}
+    <div class="login-isben-card">
+      <img src="{% static 'imagenes/logos_2.png' %}" alt="ISBEN Solution" class="login-isben-logo">
 
-  <form method="post">
-    {% csrf_token %}
-    {{ formulario.as_p }}
-    <div class="form-actions">
-      <button type="submit" class="btn btn-primary">Ingresar a mi Tienda</button>
-    </div>
-  </form>
+      <div class="login-rol-chip rol-icono-dorado"><i class="fas fa-store"></i></div>
 
-  <a href="{% url 'portal_landing' %}" class="portal-public-back">&larr; Volver</a>
+      <h1>Ingreso a tu Tienda</h1>
+      <p class="subtitle">¿No tienes cuenta? <a href="{% url 'portal_registro_tienda' %}">Regístrate aquí</a></p>
+
+      {% if error %}<div class="login-isben-error"><i class="fas fa-exclamation-circle"></i> {{ error }}</div>{% endif %}
+
+      <form method="post">
+        {% csrf_token %}
+
+        <div class="campo-icono">
+          <i class="fas fa-phone"></i>
+          {{ formulario.telefono }}
+          {% if formulario.telefono.errors %}<div class="campo-error">{{ formulario.telefono.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div class="campo-icono campo-pin">
+          {{ formulario.pin }}
+          {% if formulario.pin.errors %}<div class="campo-error">{{ formulario.pin.errors.0 }}</div>{% endif %}
+        </div>
+
+        <button type="submit" class="login-isben-btn">Ingresar a mi Tienda</button>
+      </form>
+
+      <a href="{% url 'portal_landing' %}" class="login-isben-volver"><i class="fas fa-arrow-left"></i> Volver al inicio</a>
+
+      <div class="login-isben-pie">Innovamos, diseñamos y desarrollamos · ISBEN Solution</div>
     </div>
   </div>
 {% endblock %}

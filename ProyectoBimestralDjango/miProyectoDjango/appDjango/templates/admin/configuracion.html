@@ -3,18 +3,60 @@
 {% block title %}Configuración{% endblock %}
 
 {% block content %}
-  <div class="mb-4">
-    <h1 class="h4 mb-0">Configuración Comercial</h1>
-    <p class="text-muted mb-0">Ajusta los precios y comisiones de los planes ofrecidos a mayoristas.</p>
+  <div class="pagina-cabecera">
+    <div class="pagina-cabecera-titulo">
+      <div class="pagina-cabecera-icono"><i class="fas fa-sliders-h"></i></div>
+      <div>
+        <h1>Configuración Comercial</h1>
+        <p class="subtitulo">Precios y comisiones de los planes. Aplican a los nuevos registros.</p>
+      </div>
+    </div>
   </div>
 
-  <div class="form-card">
+  <div class="form-card" style="max-width:760px;">
+    {% if formulario.non_field_errors %}
+      <div class="login-isben-error">{{ formulario.non_field_errors.0 }}</div>
+    {% endif %}
+
     <form method="post">
       {% csrf_token %}
-      {{ formulario.as_p }}
-      <div class="form-actions">
-        <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+
+      <div class="campo-fila">
+        <div>
+          <h3 style="font-size:15px; margin:0 0 10px;"><i class="fas fa-percentage" style="color:var(--isben-naranja);"></i> Plan: Solo Comisión</h3>
+          <div class="campo-grupo">
+            {{ formulario.porcentaje_comision_default.label_tag }}
+            {{ formulario.porcentaje_comision_default }}
+            {% if formulario.porcentaje_comision_default.errors %}<div class="campo-error">{{ formulario.porcentaje_comision_default.errors.0 }}</div>{% endif %}
+          </div>
+        </div>
+
+        <div>
+          <h3 style="font-size:15px; margin:0 0 10px;"><i class="fas fa-calendar-check" style="color:var(--isben-dorado-oscuro);"></i> Plan: Suscripción Anual</h3>
+          <div class="campo-grupo">
+            {{ formulario.tarifa_suscripcion_anual.label_tag }}
+            {{ formulario.tarifa_suscripcion_anual }}
+            {% if formulario.tarifa_suscripcion_anual.errors %}<div class="campo-error">{{ formulario.tarifa_suscripcion_anual.errors.0 }}</div>{% endif %}
+          </div>
+        </div>
       </div>
+
+      <h3 style="font-size:15px; margin:6px 0 10px;"><i class="fas fa-layer-group" style="color:var(--isben-naranja);"></i> Plan: Mixto</h3>
+      <div class="campo-fila">
+        <div class="campo-grupo">
+          {{ formulario.tarifa_plan_mixto.label_tag }}
+          {{ formulario.tarifa_plan_mixto }}
+          {% if formulario.tarifa_plan_mixto.errors %}<div class="campo-error">{{ formulario.tarifa_plan_mixto.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div class="campo-grupo">
+          {{ formulario.porcentaje_comision_mixto.label_tag }}
+          {{ formulario.porcentaje_comision_mixto }}
+          {% if formulario.porcentaje_comision_mixto.errors %}<div class="campo-error">{{ formulario.porcentaje_comision_mixto.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary">Guardar cambios</button>
     </form>
   </div>
 {% endblock %}

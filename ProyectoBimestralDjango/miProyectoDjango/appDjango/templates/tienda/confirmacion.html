@@ -3,14 +3,17 @@
 {% block title %}Pedido Confirmado{% endblock %}
 
 {% block content %}
-  <div style="text-align:center; padding:30px 10px;">
-    <div style="font-size:48px;">&#9989;</div>
-    <h2>¡Pedido Confirmado!</h2>
-    <p style="color:hsl(var(--muted-foreground));">Tu pedido #{{ pedido.id }} con {{ pedido.mayorista.nombre }} fue registrado.</p>
-    <div class="stat-card" style="margin:16px auto; max-width:220px;">
+  <div class="confirmacion-wrap">
+    <div class="confirmacion-check"><i class="fas fa-check"></i></div>
+    <h1 style="font-size:26px;">¡Pedido confirmado!</h1>
+    <p style="color:hsl(var(--muted-foreground));">Tu pedido <strong>#{{ pedido.id }}</strong> con <strong>{{ pedido.mayorista.nombre }}</strong> fue registrado y el stock quedó reservado.</p>
+
+    <div class="stat-card" style="margin:18px auto; max-width:240px;">
       <h2>${{ pedido.total }}</h2>
       <p>{{ pedido.get_tipo_pago_display }}</p>
     </div>
-    <a href="{% url 'portal_tienda_mis_pedidos' %}" class="btn btn-primary" style="width:100%; justify-content:center;">Ver Mis Pedidos</a>
+
+    <a href="{% url 'portal_tienda_mis_pedidos' %}" class="btn btn-primary" style="width:100%; justify-content:center; padding:13px;">Ver mis pedidos</a>
+    <a href="{% url 'portal_tienda_marketplace' %}" class="btn btn-outline" style="width:100%; justify-content:center; margin-top:8px;">Seguir comprando</a>
   </div>
 {% endblock %}

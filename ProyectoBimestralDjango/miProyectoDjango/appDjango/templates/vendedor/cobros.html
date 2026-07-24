@@ -3,17 +3,29 @@
 {% block title %}Cobros Pendientes{% endblock %}
 
 {% block content %}
-  <h2>Cobros Pendientes</h2>
-  <p style="color:hsl(var(--muted-foreground)); font-size:13px;">Registra el efectivo recibido.</p>
+  <div class="pagina-cabecera">
+    <div class="pagina-cabecera-titulo">
+      <div class="pagina-cabecera-icono"><i class="fas fa-money-bill-wave"></i></div>
+      <div>
+        <h1>Cobros Pendientes</h1>
+        <p class="subtitulo">Registra el efectivo que recibas de cada tienda.</p>
+      </div>
+    </div>
+  </div>
 
   {% for pago in pagos %}
     <div class="portal-list-card" style="text-align:center;">
-      <div style="font-size:12px; color:hsl(var(--muted-foreground));">Pedido #{{ pago.pedido.id }}</div>
-      <strong>{{ pago.pedido.tienda.nombre }}</strong>
-      <div style="font-size:22px; font-weight:700; margin:6px 0;">${{ pago.monto }}</div>
-      <a href="{% url 'portal_vendedor_marcar_cobrado' pago.id %}" class="btn btn-primary" style="width:100%; justify-content:center;">Marcar como Cobrado</a>
+      <div style="font-size:12px; color:hsl(var(--muted-foreground));">Pedido #{{ pago.pedido.id }} · {{ pago.pedido.creado_en|date:"d M" }}</div>
+      <strong style="font-size:16px;">{{ pago.pedido.tienda.nombre }}</strong>
+      <div class="cobro-monto">${{ pago.monto }}</div>
+      <a href="{% url 'portal_vendedor_marcar_cobrado' pago.id %}"
+         class="btn btn-primary" style="width:100%; justify-content:center; padding:13px;"
+         data-confirmar="¿Registrar el cobro de ${{ pago.monto }}?"
+         data-confirmar-texto="Confirmas que {{ pago.pedido.tienda.nombre }} te entregó el efectivo del pedido #{{ pago.pedido.id }}.">
+        <i class="fas fa-check"></i> Marcar como Cobrado
+      </a>
     </div>
   {% empty %}
-    <p class="portal-empty">No tienes cobros pendientes.</p>
+    <p class="portal-empty">No tienes cobros pendientes. Los pedidos en efectivo que tomes aparecerán aquí.</p>
   {% endfor %}
 {% endblock %}

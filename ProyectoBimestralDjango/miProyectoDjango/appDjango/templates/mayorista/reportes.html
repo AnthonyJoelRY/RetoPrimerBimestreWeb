@@ -3,38 +3,49 @@
 {% block title %}Reportes{% endblock %}
 
 {% block content %}
-  <div class="mb-4">
-    <h1 class="h4 mb-0">Reportes</h1>
-    <p class="text-muted mb-0">Métricas clave de tu negocio.</p>
+  <div class="pagina-cabecera">
+    <div class="pagina-cabecera-titulo">
+      <div class="pagina-cabecera-icono"><i class="fas fa-chart-line"></i></div>
+      <div>
+        <h1>Reportes</h1>
+        <p class="subtitulo">Métricas clave de tu negocio (pedidos entregados).</p>
+      </div>
+    </div>
   </div>
 
   <div class="portal-grid">
     <div class="stat-card">
-      <h2 style="font-size:16px;">{{ producto_estrella.producto__nombre|default:"N/A" }}</h2>
-      <p>Producto Estrella</p>
+      <div class="stat-card-icon stat-icon-dorado"><i class="fas fa-star"></i></div>
+      <h2 style="font-size:16px;">{{ producto_estrella.producto__nombre|default:"Sin datos aún" }}</h2>
+      <p>Producto Estrella{% if producto_estrella %} · {{ producto_estrella.total_vendido }} unidades{% endif %}</p>
     </div>
     <div class="stat-card">
-      <h2 style="font-size:16px;">{{ mejor_tienda.tienda__nombre|default:"N/A" }}</h2>
-      <p>Mejor Tienda</p>
+      <div class="stat-card-icon stat-icon-naranja"><i class="fas fa-store"></i></div>
+      <h2 style="font-size:16px;">{{ mejor_tienda.tienda__nombre|default:"Sin datos aún" }}</h2>
+      <p>Mejor Tienda{% if mejor_tienda %} · ${{ mejor_tienda.total_comprado|floatformat:2 }}{% endif %}</p>
     </div>
     <div class="stat-card">
-      <h2 style="font-size:16px;">{{ mejor_vendedor.vendedor__nombre|default:"N/A" }}</h2>
-      <p>Mejor Vendedor</p>
+      <div class="stat-card-icon stat-icon-naranja"><i class="fas fa-user-tie"></i></div>
+      <h2 style="font-size:16px;">{{ mejor_vendedor.vendedor__nombre|default:"Sin datos aún" }}</h2>
+      <p>Mejor Vendedor{% if mejor_vendedor %} · ${{ mejor_vendedor.total_vendido|floatformat:2 }}{% endif %}</p>
     </div>
     <div class="stat-card">
+      <div class="stat-card-icon stat-icon-dorado"><i class="fas fa-percentage"></i></div>
       <h2>${{ comisiones_pagadas|floatformat:2 }}</h2>
-      <p>Comisiones Pagadas (este mes)</p>
+      <p>Comisiones pagadas a la plataforma</p>
     </div>
   </div>
 
-  <div class="card" style="margin-top:20px; padding:20px;">
-    <h3 style="margin-top:0;">Ventas de los últimos 6 meses</h3>
-    <div class="portal-bar-chart">
+  <div class="tarjeta-seccion" style="margin-top:22px;">
+    <div class="tarjeta-seccion-cabecera">
+      <h2 class="h6 mb-0">Ventas de los últimos 6 meses</h2>
+    </div>
+    <div class="portal-bar-chart" style="padding: 20px 20px 14px;">
       {% for mes in ventas_por_mes %}
         <div class="bar">
-          <div style="font-size:12px; font-weight:600;">${{ mes.total|floatformat:0 }}</div>
-          <div class="bar-fill" style="height: {% widthratio mes.total maximo 140 %}px;"></div>
-          <div class="bar-label">{{ mes.etiqueta }}</div>
+          <div class="bar-valor">${{ mes.total|floatformat:0 }}</div>
+          <div class="bar-fill {% if mes.actual %}bar-fill-actual{% endif %}" style="height: {% widthratio mes.total maximo 140 %}px;"></div>
+          <div class="bar-label {% if mes.actual %}bar-label-actual{% endif %}">{{ mes.etiqueta }}</div>
         </div>
       {% endfor %}
     </div>

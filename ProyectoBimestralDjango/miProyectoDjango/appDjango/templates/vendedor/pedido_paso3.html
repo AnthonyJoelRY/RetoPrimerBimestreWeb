@@ -3,30 +3,51 @@
 {% block title %}Nuevo Pedido 3/3{% endblock %}
 
 {% block content %}
-  <a href="{% url 'portal_vendedor_pedido_paso2' tienda.id %}" style="font-size:13px; color:hsl(var(--muted-foreground)); text-decoration:none;">&larr; Editar productos</a>
-  <h2>Nuevo Pedido 3/3 — {{ tienda.nombre }}</h2>
+  <div class="pagina-cabecera">
+    <div class="pagina-cabecera-titulo">
+      <div class="pagina-cabecera-icono"><i class="fas fa-hand-holding-usd"></i></div>
+      <div>
+        <h1>Confirmar pedido</h1>
+        <p class="subtitulo">{{ tienda.nombre }} · revisa y elige cómo se paga.</p>
+      </div>
+    </div>
+    <div class="pagina-cabecera-acciones">
+      <a href="{% url 'portal_vendedor_pedido_paso2' tienda.id %}" class="btn btn-outline"><i class="fas fa-arrow-left"></i> Editar productos</a>
+    </div>
+  </div>
+
+  <div class="pasos">
+    <div class="paso hecho"><span class="paso-circulo"><i class="fas fa-check"></i></span> Tienda</div>
+    <div class="paso-linea"></div>
+    <div class="paso hecho"><span class="paso-circulo"><i class="fas fa-check"></i></span> Productos</div>
+    <div class="paso-linea"></div>
+    <div class="paso activo"><span class="paso-circulo">3</span> Pago</div>
+  </div>
 
   <div class="detail-card" style="margin-bottom:16px;">
     <table>
       {% for linea in lineas %}
         <tr><td>{{ linea.cantidad }}x {{ linea.producto.nombre }}</td><td style="text-align:right;">${{ linea.subtotal }}</td></tr>
       {% endfor %}
-      <tr><th>Total a cobrar</th><td style="text-align:right; font-weight:700;">${{ total }}</td></tr>
+      <tr><th>Total a cobrar</th><td style="text-align:right; font-weight:700; color:var(--isben-naranja); font-size:17px;">${{ total }}</td></tr>
     </table>
   </div>
 
   <form method="post">
     {% csrf_token %}
-    <h3>Método de Pago</h3>
-    <label class="portal-list-card" style="display:flex; align-items:center; gap:10px; cursor:pointer;">
-      <input type="radio" name="tipo_pago" value="efectivo" checked> Cobrar en Efectivo
-    </label>
-    <label class="portal-list-card" style="display:flex; align-items:center; gap:10px; cursor:pointer;">
-      <input type="radio" name="tipo_pago" value="digital"> Tienda paga por web (Tarjeta)
-    </label>
 
-    <div class="form-actions" style="margin-top:12px;">
-      <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;">Confirmar Pedido</button>
+    <h3 style="font-size:16px;">{{ formulario.tipo_pago.label }}</h3>
+    {% for radio in formulario.tipo_pago %}
+      <label class="pago-opcion">
+        {{ radio.tag }}
+        {% if radio.data.value == "efectivo" %}<i class="fas fa-money-bill-wave" style="color:var(--isben-dorado-oscuro);"></i>{% else %}<i class="fas fa-credit-card" style="color:var(--isben-naranja);"></i>{% endif %}
+        {{ radio.choice_label }}
+      </label>
+    {% endfor %}
+    {% if formulario.tipo_pago.errors %}<div class="campo-error">{{ formulario.tipo_pago.errors.0 }}</div>{% endif %}
+
+    <div class="form-actions" style="margin-top:14px;">
+      <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center; padding:15px; font-size:16px;">Confirmar Pedido</button>
     </div>
   </form>
 {% endblock %}
