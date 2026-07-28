@@ -1,65 +1,232 @@
 {% extends 'layouts/base-fullscreen.html' %}
 {% load static %}
 
-{% block title %}Registra tu empresa · ISBEN Solution{% endblock %}
+{% block title %}
+  Registra tu empresa · ISBEN Solution
+{% endblock %}
 
 {% block content %}
-  <div class="login-isben">
-    <img src="{% static 'imagenes/iso_1.png' %}" alt="" class="login-isben-watermark" aria-hidden="true">
+  <div class="login-isben registro-mayorista-pagina">
+    <img
+      src="{% static 'imagenes/iso_1.png' %}"
+      alt=""
+      class="login-isben-watermark"
+      aria-hidden="true"
+    >
 
-    <div class="login-isben-card login-isben-card-ancha">
-      <img src="{% static 'imagenes/logos_2.png' %}" alt="ISBEN Solution" class="login-isben-logo">
+    <div class="registro-mayorista-contenedor">
 
-      <div class="login-rol-chip rol-icono-naranja"><i class="fas fa-industry"></i></div>
+      <!-- Formulario de registro -->
+      <section class="login-isben-card registro-mayorista-formulario">
+        <img
+          src="{% static 'imagenes/logos_2.png' %}"
+          alt="ISBEN Solution"
+          class="login-isben-logo"
+        >
 
-      <h1>Registra tu empresa</h1>
-      <p class="subtitle">Crea tu cuenta de mayorista para empezar a vender</p>
-
-      {% if formulario.non_field_errors %}
-        <div class="login-isben-error">{{ formulario.non_field_errors.0 }}</div>
-      {% endif %}
-
-      <form method="post">
-        {% csrf_token %}
-
-        <div class="campo-grupo">
-          {{ formulario.nombre.label_tag }}
-          {{ formulario.nombre }}
-          {% if formulario.nombre.errors %}<div class="campo-error">{{ formulario.nombre.errors.0 }}</div>{% endif %}
+        <div class="login-rol-chip rol-icono-naranja">
+          <i class="fas fa-industry"></i>
         </div>
 
-        <div class="campo-grupo">
-          {{ formulario.email.label_tag }}
-          {{ formulario.email }}
-          {% if formulario.email.errors %}<div class="campo-error">{{ formulario.email.errors.0 }}</div>{% endif %}
-        </div>
+        <h1>Registra tu empresa</h1>
 
-        <div class="campo-grupo">
-          {{ formulario.password.label_tag }}
-          {{ formulario.password }}
-          {% if formulario.password.errors %}<div class="campo-error">{{ formulario.password.errors.0 }}</div>{% endif %}
-        </div>
+        <p class="subtitle">
+          Completa tus datos para solicitar la activación
+        </p>
 
-        <div class="campo-fila">
+        {% if formulario.non_field_errors %}
+          <div class="login-isben-error">
+            {{ formulario.non_field_errors.0 }}
+          </div>
+        {% endif %}
+
+        <form method="post">
+          {% csrf_token %}
+
+          <div class="campo-grupo">
+            {{ formulario.nombre.label_tag }}
+            {{ formulario.nombre }}
+
+            {% if formulario.nombre.errors %}
+              <div class="campo-error">
+                {{ formulario.nombre.errors.0 }}
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="campo-grupo">
+            {{ formulario.email.label_tag }}
+            {{ formulario.email }}
+
+            {% if formulario.email.errors %}
+              <div class="campo-error">
+                {{ formulario.email.errors.0 }}
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="campo-grupo">
+            {{ formulario.telefono.label_tag }}
+            {{ formulario.telefono }}
+
+            {% if formulario.telefono.errors %}
+              <div class="campo-error">
+                {{ formulario.telefono.errors.0 }}
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="campo-grupo">
+            {{ formulario.password.label_tag }}
+            {{ formulario.password }}
+
+            {% if formulario.password.errors %}
+              <div class="campo-error">
+                {{ formulario.password.errors.0 }}
+              </div>
+            {% endif %}
+          </div>
+
           <div class="campo-grupo">
             {{ formulario.categoria.label_tag }}
             {{ formulario.categoria }}
-            {% if formulario.categoria.errors %}<div class="campo-error">{{ formulario.categoria.errors.0 }}</div>{% endif %}
+
+            {% if formulario.categoria.errors %}
+              <div class="campo-error">
+                {{ formulario.categoria.errors.0 }}
+              </div>
+            {% endif %}
           </div>
 
-          <div class="campo-grupo">
-            {{ formulario.plan.label_tag }}
-            {{ formulario.plan }}
-            {% if formulario.plan.errors %}<div class="campo-error">{{ formulario.plan.errors.0 }}</div>{% endif %}
+          <button
+            type="submit"
+            class="login-isben-btn"
+          >
+            Solicitar registro
+          </button>
+        </form>
+
+        <a
+          href="{% url 'portal_login_mayorista' %}"
+          class="login-isben-volver"
+        >
+          <i class="fas fa-arrow-left"></i>
+          Ya tengo cuenta
+        </a>
+
+        <div class="login-isben-pie">
+          Innovamos, diseñamos y desarrollamos · ISBEN Solution
+        </div>
+      </section>
+
+      <!-- Información de planes -->
+      <section class="registro-planes-card">
+        <div class="registro-planes-icono">
+          <i class="fas fa-handshake"></i>
+        </div>
+
+        <h2>Conoce nuestros planes</h2>
+
+        <p class="registro-planes-introduccion">
+          Después de registrarte, nos comunicaremos contigo para
+          acordar el plan y las condiciones que mejor se adapten a
+          tu empresa.
+        </p>
+
+        <div class="registro-planes-tabla-contenedor">
+          <table class="registro-planes-tabla">
+            <thead>
+              <tr>
+                <th>Plan</th>
+                <th>¿Cómo funciona?</th>
+                <th>Recomendado para</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr>
+                <td>
+                  <span class="registro-plan-nombre plan-comision">
+                    <i class="fas fa-percentage"></i>
+                    Solo comisión
+                  </span>
+                </td>
+
+                <td>
+                  Sin costo anual fijo. Se aplica un porcentaje
+                  acordado por cada venta.
+                </td>
+
+                <td>
+                  Empresas que están comenzando o tienen ventas
+                  variables.
+                </td>
+              </tr>
+
+              <tr>
+                <td>
+                  <span class="registro-plan-nombre plan-suscripcion">
+                    <i class="fas fa-calendar-check"></i>
+                    Suscripción anual
+                  </span>
+                </td>
+
+                <td>
+                  Se acuerda un pago anual y no se cobra comisión
+                  por cada venta.
+                </td>
+
+                <td>
+                  Empresas con un volumen constante o alto de
+                  ventas.
+                </td>
+              </tr>
+
+              <tr>
+                <td>
+                  <span class="registro-plan-nombre plan-mixto">
+                    <i class="fas fa-layer-group"></i>
+                    Mixto
+                  </span>
+                </td>
+
+                <td>
+                  Combina un costo anual reducido con una comisión
+                  menor por venta.
+                </td>
+
+                <td>
+                  Empresas que buscan equilibrar ambos métodos.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="registro-planes-aviso">
+          <i class="fas fa-info-circle"></i>
+
+          <div>
+            <strong>Condiciones personalizadas</strong>
+
+            <p>
+              Los precios y porcentajes no son valores fijos. El
+              administrador los acordará contigo antes de activar
+              tu cuenta.
+            </p>
           </div>
         </div>
 
-        <button type="submit" class="login-isben-btn">Registrar mi empresa</button>
-      </form>
+        <div class="registro-planes-contacto">
+          <span>¿Necesitas más información?</span>
 
-      <a href="{% url 'portal_login_mayorista' %}" class="login-isben-volver"><i class="fas fa-arrow-left"></i> Ya tengo cuenta</a>
+          <a href="tel:0958657984">
+            <i class="fas fa-phone-alt"></i>
+            095 865 7984
+          </a>
+        </div>
+      </section>
 
-      <div class="login-isben-pie">Innovamos, diseñamos y desarrollamos · ISBEN Solution</div>
     </div>
   </div>
 {% endblock %}

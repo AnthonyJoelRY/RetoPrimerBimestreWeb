@@ -3,49 +3,295 @@
 {% block title %}Suscripciones{% endblock %}
 
 {% block content %}
+
+  <!-- Encabezado -->
   <div class="pagina-cabecera">
+
     <div class="pagina-cabecera-titulo">
-      <div class="pagina-cabecera-icono"><i class="fas fa-credit-card"></i></div>
-      <div>
-        <h1>Suscripciones</h1>
-        <p class="subtitulo">Planes contratados por los mayoristas y sus vencimientos.</p>
+
+      <div class="pagina-cabecera-icono">
+        <i class="fas fa-credit-card"></i>
       </div>
+
+      <div>
+        <h1>Suscripciones y renovaciones</h1>
+        <p class="subtitulo">
+          Controla los contratos anuales, sus vencimientos y próximas renovaciones.
+        </p>
+      </div>
+
     </div>
+
+
+    <!-- Indicadores exclusivos de suscripciones -->
     <div class="pagina-cabecera-acciones">
-      <span class="portal-badge portal-badge-green"><i class="fas fa-dollar-sign"></i>&nbsp;${{ ingresos_anuales|floatformat:2 }} / año</span>
-      {% if por_vencer > 0 %}
-        <span class="portal-badge portal-badge-red"><i class="fas fa-exclamation-triangle"></i>&nbsp;{{ por_vencer }} vencida{{ por_vencer|pluralize }}</span>
+
+      <span class="portal-badge portal-badge-green">
+        <i class="fas fa-dollar-sign"></i>
+        &nbsp;${{ ingresos_anuales|floatformat:2 }} contratados al año
+      </span>
+
+      {% if cantidad_por_vencer > 0 %}
+
+        <span class="portal-badge portal-badge-amber">
+          <i class="fas fa-clock"></i>
+          &nbsp;{{ cantidad_por_vencer }} por renovar
+        </span>
+
       {% endif %}
+
+      {% if cantidad_vencidas > 0 %}
+
+        <span class="portal-badge portal-badge-red">
+          <i class="fas fa-exclamation-triangle"></i>
+          &nbsp;{{ cantidad_vencidas }} vencidas
+        </span>
+
+      {% endif %}
+
     </div>
+
   </div>
 
+
+  <!-- Filtros de renovación -->
+  <div class="filtro-tabs">
+
+    <a href="{% url 'portal_admin_suscripciones' %}"
+       class="filtro-tab {% if filtro == 'todas' %}activo{% endif %}">
+      Todas
+    </a>
+
+    <a href="{% url 'portal_admin_suscripciones' %}?filtro=vigentes"
+       class="filtro-tab {% if filtro == 'vigentes' %}activo{% endif %}">
+      Vigentes
+    </a>
+
+    <a href="{% url 'portal_admin_suscripciones' %}?filtro=por_vencer"
+       class="filtro-tab {% if filtro == 'por_vencer' %}activo{% endif %}">
+      Por renovar
+    </a>
+
+    <a href="{% url 'portal_admin_suscripciones' %}?filtro=vencidas"
+       class="filtro-tab {% if filtro == 'vencidas' %}activo{% endif %}">
+      Vencidas
+    </a>
+
+  </div>
+
+
+  <!-- Tabla de suscripciones -->
   <div class="table-card">
+
     <table>
+
       <thead>
-        <tr><th>Empresa</th><th>Plan</th><th>Tarifa anual</th><th>Vencimiento</th><th>Estado</th></tr>
+        <tr>
+          <th>Empresa</th>
+          <th>Modalidad</th>
+          <th>Tarifa contratada</th>
+          <th>Próxima renovación</th>
+          <th>Tiempo restante</th>
+          <th>Estado de renovación</th>
+          <th>Acción</th>
+        </tr>
       </thead>
+
       <tbody>
+
         {% for mayorista in suscripciones %}
+
           <tr>
-            <td><strong>{{ mayorista.nombre }}</strong><div style="font-size:12px; color:hsl(var(--muted-foreground));">{{ mayorista.cuenta.email }}</div></td>
-            <td>{{ mayorista.get_plan_display }}</td>
-            <td>${{ mayorista.tarifa_anual }}</td>
+
+            <!-- Empresa -->
             <td>
-              {{ mayorista.fecha_vencimiento|default:"—" }}
-              {% if mayorista.fecha_vencimiento and mayorista.fecha_vencimiento < hoy %}
-                <span class="portal-badge portal-badge-red">Vencida</span>
-              {% endif %}
+
+              <div class="vendedor-cabecera" style="margin-bottom: 0;">
+
+                <div class="vendedor-avatar"
+                     style="
+                       width: 38px;
+                       height: 38px;
+                       font-size: 14px;
+                       border-radius: 11px;
+                     ">
+
+                  {{ mayorista.nombre|slice:":2"|upper }}
+
+                </div>
+
+                <strong>{{ mayorista.nombre }}</strong>
+
+              </div>
+
             </td>
+
+
+            <!-- Modalidad -->
             <td>
-              {% if mayorista.estado == 'activo' %}<span class="portal-badge portal-badge-green">Activo</span>
-              {% elif mayorista.estado == 'suspendido' %}<span class="portal-badge portal-badge-red">Suspendido</span>
-              {% else %}<span class="portal-badge portal-badge-amber">Pendiente de pago</span>{% endif %}
+
+              {% if mayorista.plan == 'suscripcion' %}
+
+                <span class="portal-badge portal-badge-green">
+                  Suscripción anual
+                </span>
+
+              {% elif mayorista.plan == 'mixto' %}
+
+                <span class="portal-badge portal-badge-gray">
+                  Plan mixto
+                </span>
+
+              {% endif %}
+
+            </td>
+
+
+            <!-- Tarifa anual -->
+            <td>
+              <strong>${{ mayorista.tarifa_anual|floatformat:2 }}</strong>
+              <div style="font-size: 12px; color: #7a8496; margin-top: 3px;">
+                por año
+              </div>
+            </td>
+
+
+            <!-- Fecha de renovación -->
+            <td>
+
+              {% if mayorista.fecha_vencimiento %}
+
+                {{ mayorista.fecha_vencimiento|date:"d \d\e F \d\e Y" }}
+
+              {% else %}
+
+                <span class="portal-badge portal-badge-red">
+                  Sin fecha
+                </span>
+
+              {% endif %}
+
+            </td>
+
+
+            <!-- Tiempo restante -->
+            <td>
+
+              {% if mayorista.fecha_vencimiento %}
+
+                {% if mayorista.dias_para_vencimiento < 0 %}
+
+                  Venció hace
+                  {{ mayorista.dias_para_vencimiento|cut:"-" }}
+                  días
+
+                {% elif mayorista.dias_para_vencimiento == 0 %}
+
+                  Vence hoy
+
+                {% elif mayorista.dias_para_vencimiento == 1 %}
+
+                  Vence mañana
+
+                {% else %}
+
+                  {{ mayorista.dias_para_vencimiento }} días restantes
+
+                {% endif %}
+
+              {% else %}
+
+                No disponible
+
+              {% endif %}
+
+            </td>
+
+
+            <!-- Estado de renovación -->
+            <td>
+
+              {% if mayorista.estado_comercial == 'vigente' %}
+
+                <span class="portal-badge portal-badge-green">
+                  <i class="fas fa-check-circle"></i>
+                  Vigente
+                </span>
+
+              {% elif mayorista.estado_comercial == 'por_vencer' %}
+
+                <span class="portal-badge portal-badge-amber">
+                  <i class="fas fa-clock"></i>
+                  Próxima a renovar
+                </span>
+
+              {% elif mayorista.estado_comercial == 'vencido' %}
+
+                <span class="portal-badge portal-badge-red">
+                  <i class="fas fa-times-circle"></i>
+                  Vencida
+                </span>
+
+              {% else %}
+
+                <span class="portal-badge portal-badge-red">
+                  <i class="fas fa-exclamation-circle"></i>
+                  Información incompleta
+                </span>
+
+              {% endif %}
+
+            </td>
+
+
+            <!-- Acción -->
+            <td>
+
+              <a href="{% url 'portal_admin_mayorista_configuracion' mayorista.id %}"
+                 class="action action-edit">
+
+                <i class="fas fa-calendar-alt"></i>
+                Actualizar contrato
+
+              </a>
+
+            </td>
+
+          </tr>
+
+
+        {% empty %}
+
+          <tr>
+            <td colspan="7">
+
+              {% if filtro == 'vigentes' %}
+
+                No existen suscripciones vigentes.
+
+              {% elif filtro == 'por_vencer' %}
+
+                No existen contratos próximos a renovar.
+
+              {% elif filtro == 'vencidas' %}
+
+                No existen suscripciones vencidas.
+
+              {% else %}
+
+                Todavía no existen planes con contratación anual.
+
+              {% endif %}
+
             </td>
           </tr>
-        {% empty %}
-          <tr><td colspan="5">Ningún mayorista tiene plan con suscripción todavía.</td></tr>
+
         {% endfor %}
+
       </tbody>
+
     </table>
+
   </div>
+
 {% endblock %}

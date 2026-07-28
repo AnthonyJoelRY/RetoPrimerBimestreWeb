@@ -1,62 +1,297 @@
 {% extends 'layouts/base.html' %}
 
-{% block title %}Configuración{% endblock %}
+{% block title %}Configuración comercial{% endblock %}
 
 {% block content %}
+
+  <!-- Encabezado -->
   <div class="pagina-cabecera">
+
     <div class="pagina-cabecera-titulo">
-      <div class="pagina-cabecera-icono"><i class="fas fa-sliders-h"></i></div>
-      <div>
-        <h1>Configuración Comercial</h1>
-        <p class="subtitulo">Precios y comisiones de los planes. Aplican a los nuevos registros.</p>
+
+      <div class="pagina-cabecera-icono">
+        <i class="fas fa-sliders-h"></i>
       </div>
+
+      <div>
+        <h1>Configuración comercial</h1>
+        <p class="subtitulo">
+          Asigna y edita el acuerdo comercial individual de cada mayorista.
+        </p>
+      </div>
+
     </div>
+
   </div>
 
-  <div class="form-card" style="max-width:760px;">
-    {% if formulario.non_field_errors %}
-      <div class="login-isben-error">{{ formulario.non_field_errors.0 }}</div>
+
+  <!-- Filtros por tipo de acuerdo -->
+  <div class="filtro-tabs">
+
+    <a href="{% url 'portal_admin_configuracion' %}"
+       class="filtro-tab {% if filtro == 'todos' %}activo{% endif %}">
+      Todos
+    </a>
+
+    <a href="{% url 'portal_admin_configuracion' %}?filtro=sin_asignar"
+       class="filtro-tab {% if filtro == 'sin_asignar' %}activo{% endif %}">
+      Sin configurar
+    </a>
+
+    <a href="{% url 'portal_admin_configuracion' %}?filtro=comision"
+       class="filtro-tab {% if filtro == 'comision' %}activo{% endif %}">
+      Solo comisión
+    </a>
+
+    <a href="{% url 'portal_admin_configuracion' %}?filtro=suscripcion"
+       class="filtro-tab {% if filtro == 'suscripcion' %}activo{% endif %}">
+      Suscripción
+    </a>
+
+    <a href="{% url 'portal_admin_configuracion' %}?filtro=mixto"
+       class="filtro-tab {% if filtro == 'mixto' %}activo{% endif %}">
+      Mixto
+    </a>
+
+  </div>
+
+
+  <!-- Buscador -->
+  <form method="get"
+        action="{% url 'portal_admin_configuracion' %}"
+        style="
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          max-width: 720px;
+          margin-bottom: 22px;
+        ">
+
+    {% if filtro != 'todos' %}
+      <input type="hidden" name="filtro" value="{{ filtro }}">
     {% endif %}
 
-    <form method="post">
-      {% csrf_token %}
+    <div style="
+      position: relative;
+      flex: 1;
+    ">
 
-      <div class="campo-fila">
-        <div>
-          <h3 style="font-size:15px; margin:0 0 10px;"><i class="fas fa-percentage" style="color:var(--isben-naranja);"></i> Plan: Solo Comisión</h3>
-          <div class="campo-grupo">
-            {{ formulario.porcentaje_comision_default.label_tag }}
-            {{ formulario.porcentaje_comision_default }}
-            {% if formulario.porcentaje_comision_default.errors %}<div class="campo-error">{{ formulario.porcentaje_comision_default.errors.0 }}</div>{% endif %}
-          </div>
-        </div>
+      <i class="fas fa-search"
+         style="
+           position: absolute;
+           left: 17px;
+           top: 50%;
+           transform: translateY(-50%);
+           color: #8c96a8;
+         ">
+      </i>
 
-        <div>
-          <h3 style="font-size:15px; margin:0 0 10px;"><i class="fas fa-calendar-check" style="color:var(--isben-dorado-oscuro);"></i> Plan: Suscripción Anual</h3>
-          <div class="campo-grupo">
-            {{ formulario.tarifa_suscripcion_anual.label_tag }}
-            {{ formulario.tarifa_suscripcion_anual }}
-            {% if formulario.tarifa_suscripcion_anual.errors %}<div class="campo-error">{{ formulario.tarifa_suscripcion_anual.errors.0 }}</div>{% endif %}
-          </div>
-        </div>
-      </div>
+      <input type="search"
+             name="q"
+             value="{{ busqueda }}"
+             placeholder="Buscar por nombre de empresa"
+             aria-label="Buscar empresa"
+             style="
+               width: 100%;
+               min-height: 48px;
+               padding: 10px 16px 10px 48px;
+               border: 1px solid #d8dee8;
+               border-radius: 12px;
+               background: #ffffff;
+               color: #17233c;
+               font-family: inherit;
+               font-size: 15px;
+               outline: none;
+             ">
 
-      <h3 style="font-size:15px; margin:6px 0 10px;"><i class="fas fa-layer-group" style="color:var(--isben-naranja);"></i> Plan: Mixto</h3>
-      <div class="campo-fila">
-        <div class="campo-grupo">
-          {{ formulario.tarifa_plan_mixto.label_tag }}
-          {{ formulario.tarifa_plan_mixto }}
-          {% if formulario.tarifa_plan_mixto.errors %}<div class="campo-error">{{ formulario.tarifa_plan_mixto.errors.0 }}</div>{% endif %}
-        </div>
+    </div>
 
-        <div class="campo-grupo">
-          {{ formulario.porcentaje_comision_mixto.label_tag }}
-          {{ formulario.porcentaje_comision_mixto }}
-          {% if formulario.porcentaje_comision_mixto.errors %}<div class="campo-error">{{ formulario.porcentaje_comision_mixto.errors.0 }}</div>{% endif %}
-        </div>
-      </div>
+    <button type="submit" class="btn btn-primary">
+      <i class="fas fa-search"></i>
+      Buscar
+    </button>
 
-      <button type="submit" class="btn btn-primary">Guardar cambios</button>
-    </form>
+    {% if busqueda %}
+      <a href="{% url 'portal_admin_configuracion' %}{% if filtro != 'todos' %}?filtro={{ filtro }}{% endif %}"
+         class="btn btn-outline">
+        Limpiar
+      </a>
+    {% endif %}
+
+  </form>
+
+
+  <!-- Tabla de acuerdos comerciales -->
+  <div class="table-card">
+
+    <table>
+
+      <thead>
+        <tr>
+          <th>Empresa</th>
+          <th>Tipo de acuerdo</th>
+          <th>Estado comercial</th>
+          <th>Acción</th>
+        </tr>
+      </thead>
+
+      <tbody>
+
+        {% for mayorista in mayoristas %}
+
+          <tr>
+
+            <!-- Empresa -->
+            <td>
+
+              <div class="vendedor-cabecera" style="margin-bottom: 0;">
+
+                <div class="vendedor-avatar"
+                     style="
+                       width: 38px;
+                       height: 38px;
+                       font-size: 14px;
+                       border-radius: 11px;
+                     ">
+
+                  {{ mayorista.nombre|slice:":2"|upper }}
+
+                </div>
+
+                <strong>{{ mayorista.nombre }}</strong>
+
+              </div>
+
+            </td>
+
+
+            <!-- Tipo de acuerdo -->
+            <td>
+
+              {% if mayorista.plan == 'sin_asignar' %}
+
+                <span class="portal-badge portal-badge-gray">
+                  Sin asignar
+                </span>
+
+              {% elif mayorista.plan == 'comision' %}
+
+                <span class="portal-badge portal-badge-amber">
+                  Solo comisión
+                </span>
+
+              {% elif mayorista.plan == 'suscripcion' %}
+
+                <span class="portal-badge portal-badge-green">
+                  Suscripción
+                </span>
+
+              {% elif mayorista.plan == 'mixto' %}
+
+                <span class="portal-badge portal-badge-gray">
+                  Mixto
+                </span>
+
+              {% endif %}
+
+            </td>
+
+
+            <!-- Estado comercial -->
+            <td>
+
+              {% if mayorista.estado_comercial == 'sin_configurar' %}
+
+                <span class="portal-badge portal-badge-amber">
+                  <i class="fas fa-clock"></i>
+                  Sin configurar
+                </span>
+
+              {% elif mayorista.estado_comercial == 'vigente' %}
+
+                <span class="portal-badge portal-badge-green">
+                  <i class="fas fa-check-circle"></i>
+                  Vigente
+                </span>
+
+              {% elif mayorista.estado_comercial == 'por_vencer' %}
+
+                <span class="portal-badge portal-badge-amber">
+                  <i class="fas fa-exclamation-circle"></i>
+                  Por vencer
+                </span>
+
+              {% elif mayorista.estado_comercial == 'vencido' %}
+
+                <span class="portal-badge portal-badge-red">
+                  <i class="fas fa-times-circle"></i>
+                  Vencido
+                </span>
+
+              {% endif %}
+
+            </td>
+
+
+            <!-- Acción -->
+            <td>
+
+              {% if mayorista.estado_comercial == 'sin_configurar' %}
+
+                <a href="{% url 'portal_admin_mayorista_configuracion' mayorista.id %}"
+                   class="action action-view">
+
+                  <i class="fas fa-sliders-h"></i>
+                  Configurar acuerdo
+
+                </a>
+
+              {% else %}
+
+                <a href="{% url 'portal_admin_mayorista_configuracion' mayorista.id %}"
+                   class="action action-edit">
+
+                  <i class="fas fa-edit"></i>
+                  Editar acuerdo
+
+                </a>
+
+              {% endif %}
+
+            </td>
+
+          </tr>
+
+
+        {% empty %}
+
+          <tr>
+            <td colspan="4">
+
+              {% if busqueda %}
+
+                No se encontraron empresas con el nombre
+                “{{ busqueda }}”.
+
+              {% elif filtro != 'todos' %}
+
+                No existen mayoristas con este tipo de acuerdo.
+
+              {% else %}
+
+                No existen mayoristas registrados.
+
+              {% endif %}
+
+            </td>
+          </tr>
+
+        {% endfor %}
+
+      </tbody>
+
+    </table>
+
   </div>
+
 {% endblock %}

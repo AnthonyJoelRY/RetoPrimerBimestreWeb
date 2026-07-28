@@ -1,0 +1,317 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}
+  Configuración comercial
+{% endblock %}
+
+{% block content %}
+  <div class="pagina-cabecera">
+    <div class="pagina-cabecera-titulo">
+      <div class="pagina-cabecera-icono">
+        <i class="fas fa-handshake"></i>
+      </div>
+
+      <div>
+        <h1>Configuración comercial</h1>
+
+        <p class="subtitulo">
+          Define las condiciones individuales de
+          {{ mayorista.nombre }}.
+        </p>
+      </div>
+    </div>
+
+    <div class="pagina-cabecera-acciones">
+      <a
+        href="{% url 'portal_admin_mayoristas' %}"
+        class="action action-view"
+      >
+        <i class="fas fa-arrow-left"></i>
+        Volver
+      </a>
+    </div>
+  </div>
+
+  <div class="config-comercial-grid">
+
+    <!-- Información de la empresa -->
+    <aside class="config-empresa-card">
+      <div class="config-empresa-avatar">
+        {{ mayorista.nombre|slice:":2"|upper }}
+      </div>
+
+      <h2>{{ mayorista.nombre }}</h2>
+
+      <span class="config-empresa-categoria">
+        {{ mayorista.get_categoria_display }}
+      </span>
+
+      <div class="config-empresa-datos">
+        <div class="config-empresa-dato">
+          <i class="fas fa-envelope"></i>
+
+          <div>
+            <span>Correo electrónico</span>
+            <strong>{{ mayorista.cuenta.email }}</strong>
+          </div>
+        </div>
+
+        <div class="config-empresa-dato">
+          <i class="fas fa-phone-alt"></i>
+
+          <div>
+            <span>Número de celular</span>
+
+            <strong>
+              {% if mayorista.telefono %}
+                {{ mayorista.telefono }}
+              {% else %}
+                Sin celular registrado
+              {% endif %}
+            </strong>
+          </div>
+        </div>
+
+        <div class="config-empresa-dato">
+          <i class="fas fa-layer-group"></i>
+
+          <div>
+            <span>Plan actual</span>
+            <strong>{{ mayorista.get_plan_display }}</strong>
+          </div>
+        </div>
+
+        <div class="config-empresa-dato">
+          <i class="fas fa-user-check"></i>
+
+          <div>
+            <span>Estado de la cuenta</span>
+
+            <strong>
+              {{ mayorista.get_estado_display }}
+            </strong>
+          </div>
+        </div>
+      </div>
+
+      {% if activar_al_guardar %}
+        <div class="config-activacion-aviso">
+          <i class="fas fa-user-clock"></i>
+
+          <div>
+            <strong>Cuenta pendiente</strong>
+
+            <p>
+              Al guardar condiciones válidas, la cuenta será activada
+              automáticamente.
+            </p>
+          </div>
+        </div>
+      {% endif %}
+    </aside>
+
+    <!-- Formulario comercial -->
+    <section class="config-formulario-card">
+      <div class="config-formulario-cabecera">
+        <div>
+          <h2>Condiciones acordadas</h2>
+
+          <p>
+            Ingresa los valores negociados con esta empresa.
+          </p>
+        </div>
+
+        <div class="config-formulario-icono">
+          <i class="fas fa-file-signature"></i>
+        </div>
+      </div>
+
+      {% if formulario.non_field_errors %}
+        <div class="login-isben-error">
+          {{ formulario.non_field_errors.0 }}
+        </div>
+      {% endif %}
+
+      <form method="post">
+        {% csrf_token %}
+
+        <div class="campo-grupo">
+          {{ formulario.plan.label_tag }}
+          {{ formulario.plan }}
+
+          {% if formulario.plan.errors %}
+            <div class="campo-error">
+              {{ formulario.plan.errors.0 }}
+            </div>
+          {% endif %}
+
+          <small
+            class="config-plan-ayuda"
+            id="configPlanAyuda"
+          >
+            Selecciona el plan acordado con el mayorista.
+          </small>
+        </div>
+
+        <div
+          class="campo-grupo config-comercial-campo"
+          id="configCampoTarifa"
+        >
+          {{ formulario.tarifa_anual.label_tag }}
+          {{ formulario.tarifa_anual }}
+
+          {% if formulario.tarifa_anual.errors %}
+            <div class="campo-error">
+              {{ formulario.tarifa_anual.errors.0 }}
+            </div>
+          {% endif %}
+
+          <small>
+            Valor total que la empresa pagará por un año.
+          </small>
+        </div>
+
+        <div
+          class="campo-grupo config-comercial-campo"
+          id="configCampoComision"
+        >
+          {{ formulario.porcentaje_comision.label_tag }}
+          {{ formulario.porcentaje_comision }}
+
+          {% if formulario.porcentaje_comision.errors %}
+            <div class="campo-error">
+              {{ formulario.porcentaje_comision.errors.0 }}
+            </div>
+          {% endif %}
+
+          <small>
+            Porcentaje que se aplicará sobre cada venta procesada.
+          </small>
+        </div>
+
+        <div
+          class="campo-grupo config-comercial-campo"
+          id="configCampoVencimiento"
+        >
+          {{ formulario.fecha_vencimiento.label_tag }}
+          {{ formulario.fecha_vencimiento }}
+
+          {% if formulario.fecha_vencimiento.errors %}
+            <div class="campo-error">
+              {{ formulario.fecha_vencimiento.errors.0 }}
+            </div>
+          {% endif %}
+
+          <small>
+            Fecha hasta la cual estará vigente la suscripción.
+          </small>
+        </div>
+
+        <div class="config-formulario-acciones">
+          <a
+            href="{% url 'portal_admin_mayoristas' %}"
+            class="config-boton-secundario"
+          >
+            Cancelar
+          </a>
+
+          <button
+            type="submit"
+            class="config-boton-guardar"
+          >
+            {% if activar_al_guardar %}
+              <i class="fas fa-user-check"></i>
+              Guardar condiciones y activar
+            {% else %}
+              <i class="fas fa-save"></i>
+              Guardar cambios
+            {% endif %}
+          </button>
+        </div>
+      </form>
+    </section>
+  </div>
+{% endblock %}
+
+{% block javascripts %}
+  <script>
+    (function () {
+      var plan = document.getElementById("id_plan");
+      var campoTarifa = document.getElementById(
+        "configCampoTarifa"
+      );
+      var campoComision = document.getElementById(
+        "configCampoComision"
+      );
+      var campoVencimiento = document.getElementById(
+        "configCampoVencimiento"
+      );
+      var ayuda = document.getElementById(
+        "configPlanAyuda"
+      );
+
+      if (!plan) {
+        return;
+      }
+
+      function mostrarCampo(campo, mostrar) {
+        if (!campo) {
+          return;
+        }
+
+        campo.classList.toggle(
+          "oculto",
+          !mostrar
+        );
+
+        var entrada = campo.querySelector(
+          "input, select"
+        );
+
+        if (entrada) {
+          entrada.disabled = !mostrar;
+        }
+      }
+
+      function actualizarCampos() {
+        var valor = plan.value;
+
+        mostrarCampo(
+          campoTarifa,
+          valor === "suscripcion" || valor === "mixto"
+        );
+
+        mostrarCampo(
+          campoComision,
+          valor === "comision" || valor === "mixto"
+        );
+
+        mostrarCampo(
+          campoVencimiento,
+          valor === "suscripcion" || valor === "mixto"
+        );
+
+        if (valor === "comision") {
+          ayuda.textContent =
+            "Este plan cobra únicamente un porcentaje por cada venta.";
+        } else if (valor === "suscripcion") {
+          ayuda.textContent =
+            "Este plan utiliza un costo anual y no cobra comisión por venta.";
+        } else if (valor === "mixto") {
+          ayuda.textContent =
+            "Este plan combina un costo anual reducido y una comisión por venta.";
+        } else {
+          ayuda.textContent =
+            "Selecciona el plan acordado con el mayorista.";
+        }
+      }
+
+      plan.addEventListener(
+        "change",
+        actualizarCampos
+      );
+
+      actualizarCampos();
+    })();
+  </script>
+{% endblock %}

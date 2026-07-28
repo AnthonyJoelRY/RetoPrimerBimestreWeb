@@ -1,0 +1,142 @@
+
+{% extends 'layouts/base-fullscreen.html' %}
+{% load static %}
+
+{% block title %}
+  Registro recibido · ISBEN Solution
+{% endblock %}
+
+{% block stylesheets %}
+  <style>
+    .registro-espera-card {
+      max-width: 620px;
+      text-align: center;
+    }
+
+    .registro-espera-icono {
+      width: 82px;
+      height: 82px;
+      margin: 0 auto 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #fff3cd;
+      color: #c58b00;
+      font-size: 34px;
+    }
+
+    .registro-espera-texto {
+      color: #5f6673;
+      font-size: 17px;
+      line-height: 1.6;
+      margin-bottom: 22px;
+    }
+
+    .registro-espera-aviso {
+      padding: 22px;
+      margin: 22px 0;
+      border: 1px solid #ffd79a;
+      border-radius: 16px;
+      background: #fff9ef;
+    }
+
+    .registro-espera-aviso h2 {
+      margin: 0 0 8px;
+      color: #16213c;
+      font-size: 18px;
+    }
+
+    .registro-espera-telefono {
+      display: block;
+      margin: 10px 0;
+      color: #ff3b1f;
+      font-size: 28px;
+      font-weight: 800;
+      text-decoration: none;
+    }
+
+    .registro-espera-telefono:hover {
+      color: #d92b13;
+    }
+
+    .registro-espera-boton {
+      display: block;
+      text-decoration: none;
+      text-align: center;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <div class="login-isben">
+    <img
+      src="{% static 'imagenes/iso_1.png' %}"
+      alt=""
+      class="login-isben-watermark"
+      aria-hidden="true"
+    >
+
+    <div class="login-isben-card registro-espera-card">
+      <img
+        src="{% static 'imagenes/logos_2.png' %}"
+        alt="ISBEN Solution"
+        class="login-isben-logo"
+      >
+
+      <div class="registro-espera-icono">
+        <i class="fas fa-user-clock"></i>
+      </div>
+
+      <h1>Registro recibido</h1>
+
+      {% if nombre_empresa %}
+        <p class="registro-espera-texto">
+          La cuenta de
+          <strong>{{ nombre_empresa }}</strong>
+          fue registrada correctamente.
+        </p>
+      {% else %}
+        <p class="registro-espera-texto">
+          Tu empresa fue registrada correctamente.
+        </p>
+      {% endif %}
+
+      <div class="registro-espera-aviso">
+        <h2>
+          <i class="fas fa-hourglass-half"></i>
+          Activación pendiente
+        </h2>
+
+        <p>
+          Debe esperar a que el administrador revise la información
+          y active su cuenta.
+        </p>
+
+        <a
+          href="tel:0958657984"
+          class="registro-espera-telefono"
+        >
+          <i class="fas fa-phone-alt"></i>
+          095 865 7984
+        </a>
+
+        <p>
+          Comunícate a este número para confirmar los datos de tu
+          empresa y continuar con la activación.
+        </p>
+      </div>
+
+      <a
+        href="{% url 'portal_login_mayorista' %}"
+        class="login-isben-btn registro-espera-boton"
+      >
+        Ir al inicio de sesión
+      </a>
+
+      <div class="login-isben-pie">
+        Innovamos, diseñamos y desarrollamos · ISBEN Solution
+      </div>
+    </div>
+  </div>
+{% endblock %}

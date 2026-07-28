@@ -3,65 +3,219 @@
 {% block title %}Mayoristas{% endblock %}
 
 {% block content %}
+
   <div class="pagina-cabecera">
     <div class="pagina-cabecera-titulo">
-      <div class="pagina-cabecera-icono"><i class="fas fa-building"></i></div>
+
+      <div class="pagina-cabecera-icono">
+        <i class="fas fa-building"></i>
+      </div>
+
       <div>
         <h1>Empresas Mayoristas</h1>
-        <p class="subtitulo">Activa, suspende y controla quién opera en la plataforma.</p>
+        <p class="subtitulo">
+          Revisa solicitudes y administra el acceso de las empresas a la plataforma.
+        </p>
       </div>
+
     </div>
+
     <div class="pagina-cabecera-acciones">
       {% if pendientes > 0 %}
-        <span class="portal-badge portal-badge-amber"><i class="fas fa-user-clock"></i>&nbsp;{{ pendientes }} por activar</span>
+        <span class="portal-badge portal-badge-amber">
+          <i class="fas fa-user-clock"></i>
+          &nbsp;{{ pendientes }} por revisar
+        </span>
       {% endif %}
     </div>
   </div>
 
+
+  <!-- Filtros por estado de la cuenta -->
   <div class="filtro-tabs">
-    <a href="{% url 'portal_admin_mayoristas' %}" class="filtro-tab {% if not estado %}activo{% endif %}">Todos</a>
-    <a href="{% url 'portal_admin_mayoristas' %}?estado=pendiente_pago" class="filtro-tab {% if estado == 'pendiente_pago' %}activo{% endif %}">Pendientes</a>
-    <a href="{% url 'portal_admin_mayoristas' %}?estado=activo" class="filtro-tab {% if estado == 'activo' %}activo{% endif %}">Activos</a>
-    <a href="{% url 'portal_admin_mayoristas' %}?estado=suspendido" class="filtro-tab {% if estado == 'suspendido' %}activo{% endif %}">Suspendidos</a>
+
+    <a href="{% url 'portal_admin_mayoristas' %}"
+       class="filtro-tab {% if not estado %}activo{% endif %}">
+      Todos
+    </a>
+
+    <a href="{% url 'portal_admin_mayoristas' %}?estado=pendiente_pago"
+       class="filtro-tab {% if estado == 'pendiente_pago' %}activo{% endif %}">
+      Pendientes
+    </a>
+
+    <a href="{% url 'portal_admin_mayoristas' %}?estado=activo"
+       class="filtro-tab {% if estado == 'activo' %}activo{% endif %}">
+      Activos
+    </a>
+
+    <a href="{% url 'portal_admin_mayoristas' %}?estado=suspendido"
+       class="filtro-tab {% if estado == 'suspendido' %}activo{% endif %}">
+      Suspendidos
+    </a>
+
   </div>
 
+
+  <!-- Tabla de mayoristas -->
   <div class="table-card">
+
     <table>
+
       <thead>
-        <tr><th>Empresa</th><th>Contacto</th><th>Plan</th><th>Estado</th><th>Registro</th><th>Acciones</th></tr>
+        <tr>
+          <th>Empresa</th>
+          <th>Contacto</th>
+          <th>Estado de cuenta</th>
+          <th>Registro</th>
+          <th>Acciones</th>
+        </tr>
       </thead>
+
       <tbody>
+
         {% for mayorista in mayoristas %}
+
           <tr>
+
+            <!-- Empresa -->
             <td>
-              <div class="vendedor-cabecera" style="margin-bottom:0;">
-                <div class="vendedor-avatar" style="width:38px; height:38px; font-size:14px; border-radius:11px;">{{ mayorista.nombre|slice:":2"|upper }}</div>
+              <div class="vendedor-cabecera" style="margin-bottom: 0;">
+
+                <div class="vendedor-avatar"
+                     style="width: 38px;
+                            height: 38px;
+                            font-size: 14px;
+                            border-radius: 11px;">
+
+                  {{ mayorista.nombre|slice:":2"|upper }}
+
+                </div>
+
                 <strong>{{ mayorista.nombre }}</strong>
+
               </div>
             </td>
-            <td>{{ mayorista.cuenta.email }}</td>
-            <td>{{ mayorista.get_plan_display }}</td>
+
+
+            <!-- Contacto -->
             <td>
-              {% if mayorista.estado == 'activo' %}<span class="portal-badge portal-badge-green">Activo</span>
-              {% elif mayorista.estado == 'suspendido' %}<span class="portal-badge portal-badge-red">Suspendido</span>
-              {% else %}<span class="portal-badge portal-badge-amber">Pendiente de pago</span>{% endif %}
+
+              <div>
+                <i class="fas fa-envelope"></i>
+                {{ mayorista.cuenta.email }}
+              </div>
+
+              <div style="margin-top: 6px;">
+                <i class="fas fa-phone"></i>
+
+                {% if mayorista.telefono %}
+                  {{ mayorista.telefono }}
+                {% else %}
+                  Sin celular registrado
+                {% endif %}
+              </div>
+
             </td>
-            <td>{{ mayorista.cuenta.date_joined|date:"d M Y" }}</td>
+
+
+            <!-- Estado de la cuenta -->
             <td>
+
               {% if mayorista.estado == 'activo' %}
+
+                <span class="portal-badge portal-badge-green">
+                  Activo
+                </span>
+
+              {% elif mayorista.estado == 'suspendido' %}
+
+                <span class="portal-badge portal-badge-red">
+                  Suspendido
+                </span>
+
+              {% else %}
+
+                <span class="portal-badge portal-badge-amber">
+                  Pendiente de revisión
+                </span>
+
+              {% endif %}
+
+            </td>
+
+
+            <!-- Fecha de registro -->
+            <td>
+              {{ mayorista.cuenta.date_joined|date:"d M Y" }}
+            </td>
+
+
+            <!-- Acciones -->
+            <td>
+
+              {% if mayorista.estado == 'pendiente_pago' %}
+
+                <a href="{% url 'portal_admin_mayorista_configuracion' mayorista.id %}"
+                   class="action action-view">
+
+                  <i class="fas fa-user-check"></i>
+                  Revisar solicitud
+
+                </a>
+
+
+              {% elif mayorista.estado == 'activo' %}
+
                 <a href="{% url 'portal_admin_mayorista_toggle' mayorista.id %}"
                    class="action action-delete"
                    data-confirmar="¿Suspender a {{ mayorista.nombre }}?"
-                   data-confirmar-texto="La empresa, sus vendedores y su catálogo dejarán de estar disponibles hasta que la reactives.">Suspender</a>
-              {% else %}
-                <a href="{% url 'portal_admin_mayorista_toggle' mayorista.id %}" class="action action-view">Activar</a>
+                   data-confirmar-texto="La empresa, sus vendedores y su catálogo dejarán de estar disponibles hasta que la reactives.">
+
+                  <i class="fas fa-user-slash"></i>
+                  Suspender
+
+                </a>
+
+
+              {% elif mayorista.estado == 'suspendido' %}
+
+                <a href="{% url 'portal_admin_mayorista_toggle' mayorista.id %}"
+                   class="action action-view"
+                   data-confirmar="¿Reactivar a {{ mayorista.nombre }}?"
+                   data-confirmar-texto="La empresa volverá a tener acceso a la plataforma.">
+
+                  <i class="fas fa-user-check"></i>
+                  Reactivar
+
+                </a>
+
               {% endif %}
+
+            </td>
+
+          </tr>
+
+
+        {% empty %}
+
+          <tr>
+            <td colspan="5">
+              No hay mayoristas
+              {% if estado %}
+                en este estado
+              {% else %}
+                registrados
+              {% endif %}.
             </td>
           </tr>
-        {% empty %}
-          <tr><td colspan="6">No hay mayoristas {% if estado %}en este estado{% else %}registrados{% endif %}.</td></tr>
+
         {% endfor %}
+
       </tbody>
+
     </table>
+
   </div>
+
 {% endblock %}

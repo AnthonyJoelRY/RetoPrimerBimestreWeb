@@ -8,10 +8,11 @@ from django.contrib.auth.forms import (
     SetPasswordForm,
 )
 from django.contrib.auth.models import User, Group
-from django.db import transaction
 from django.db.models import Q, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from datetime import timedelta
+from functools import wraps
 
 # Django REST Framework
 from rest_framework import viewsets
@@ -41,7 +42,6 @@ from appDjango.models import (
     PedidoItem,
     Pago,
     Rendicion,
-    PlataformaConfig,
 )
 
 # Formularios
@@ -50,13 +50,13 @@ from appDjango.forms import (
     AgregarCarritoForm,
     LoginEmailForm,
     MayoristaRegistroForm,
+    MayoristaConfigComercialForm,
     PedidoVendedorPagoForm,
     TiendaRegistroForm,
     TiendaLoginForm,
     VendedorCrearForm,
     ProductoMayoristaForm,
     AjusteStockForm,
-    PlataformaConfigForm,
     PedidoEntregaForm,
 )
 
@@ -72,11 +72,38 @@ def mayorista_required(view_func):
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
         if not request.user.is_authenticated or not hasattr(
-            request.user, "perfil_mayorista"
+            request.user,
+            "perfil_mayorista",
         ):
             return redirect("portal_login_mayorista")
-        request.mayorista = request.user.perfil_mayorista
-        return view_func(request, *args, **kwargs)
+
+        mayorista = request.user.perfil_mayorista
+
+        if mayorista.estado == "pendiente_pago":
+            nombre_empresa = mayorista.nombre
+
+            logout(request)
+
+            request.session["mayorista_registrado_nombre"] = nombre_empresa
+
+            return redirect("portal_registro_mayorista_confirmacion")
+
+        if mayorista.estado == "suspendido":
+            logout(request)
+
+            request.session["mayorista_login_error"] = (
+                "Tu cuenta está suspendida. " "Comunícate con el administrador."
+            )
+
+            return redirect("portal_login_mayorista")
+
+        request.mayorista = mayorista
+
+        return view_func(
+            request,
+            *args,
+            **kwargs,
+        )
 
     return wrapper
 
@@ -120,79 +147,6 @@ def admin_required(view_func):
     return wrapper
 
 
-# ===================== Lógica compartida de creación de pedidos =====================
-
-
-def crear_pedido_validado(
-    *,
-    tienda,
-    mayorista,
-    vendedor,
-    creado_por,
-    tipo_pago,
-    lineas,
-    telefono_contacto="",
-    nota_voz=None,
-    lat=None,
-    lng=None,
-):
-    """Crea un pedido validando stock y mínimo de compra dentro de una transacción atómica.
-
-    `lineas` es una lista de dicts {"producto": Producto, "cantidad": int}.
-    Lanza ValueError si el monto o el stock no son válidos (RF-08 / RF-10).
-    """
-    with transaction.atomic():
-        productos_bloqueados = {}
-        for linea in lineas:
-            producto = Producto.objects.select_for_update().get(pk=linea["producto"].id)
-            if not producto.verificar_stock(linea["cantidad"]):
-                raise ValueError("No hay stock suficiente de %s." % producto.nombre)
-            if not producto.verificar_minimo_compra(linea["cantidad"]):
-                raise ValueError(
-                    "%s requiere un mínimo de %s unidades por pedido."
-                    % (producto.nombre, producto.minimo_compra)
-                )
-            productos_bloqueados[producto.id] = producto
-
-        pedido = Pedido.objects.create(
-            tienda=tienda,
-            mayorista=mayorista,
-            vendedor=vendedor,
-            creado_por=creado_por,
-            estado="validado",
-            tipo_pago=tipo_pago,
-            telefono_contacto=telefono_contacto,
-            nota_voz_url=nota_voz,
-            lat_entrega=lat,
-            lng_entrega=lng,
-        )
-
-        for linea in lineas:
-            producto = productos_bloqueados[linea["producto"].id]
-            PedidoItem.objects.create(
-                pedido=pedido,
-                producto=producto,
-                cantidad=linea["cantidad"],
-                precio_unitario=producto.precio,
-            )
-            producto.descontar_stock(linea["cantidad"])
-
-        pedido.actualizar_totales()
-
-        es_digital = tipo_pago == "digital"
-        Pago.objects.create(
-            pedido=pedido,
-            metodo="tarjeta" if es_digital else "efectivo",
-            monto=pedido.total,
-            estado="confirmado" if es_digital else "pendiente",
-        )
-        if es_digital:
-            pedido.cobro_confirmado = True
-            pedido.save(update_fields=["cobro_confirmado"])
-
-    return pedido
-
-
 # ===================== Autenticación y landing =====================
 
 
@@ -213,18 +167,38 @@ def landing(request):
 def registro_mayorista(request):
     if request.method == "POST":
         formulario = MayoristaRegistroForm(request.POST)
+
         if formulario.is_valid():
             mayorista = formulario.guardar()
-            login(request, mayorista.cuenta)
-            messages.success(
-                request,
-                "Cuenta creada. Tu suscripción está pendiente de activación por el administrador.",
-            )
-            return redirect("portal_mayorista_dashboard")
+
+            request.session["mayorista_registrado_nombre"] = mayorista.nombre
+
+            return redirect("portal_registro_mayorista_confirmacion")
     else:
         formulario = MayoristaRegistroForm()
 
-    return render(request, "auth/registro_mayorista.html", {"formulario": formulario})
+    return render(
+        request,
+        "auth/registro_mayorista.html",
+        {
+            "formulario": formulario,
+        },
+    )
+
+
+def registro_mayorista_confirmacion(request):
+    nombre_empresa = request.session.get(
+        "mayorista_registrado_nombre",
+        "",
+    )
+
+    return render(
+        request,
+        "auth/registro_mayorista_confirmacion.html",
+        {
+            "nombre_empresa": nombre_empresa,
+        },
+    )
 
 
 def registro_tienda(request):
@@ -242,24 +216,54 @@ def registro_tienda(request):
 
 
 def login_mayorista(request):
-    error = None
+    error = request.session.pop(
+        "mayorista_login_error",
+        None,
+    )
+
     if request.method == "POST":
         formulario = LoginEmailForm(request.POST)
+
         if formulario.is_valid():
             user = authenticate(
                 request,
                 username=formulario.cleaned_data["email"],
                 password=formulario.cleaned_data["password"],
             )
-            if user is not None and hasattr(user, "perfil_mayorista"):
-                login(request, user)
-                return redirect("portal_mayorista_dashboard")
-            error = "Correo o contraseña incorrectos."
+
+            if user is not None and hasattr(
+                user,
+                "perfil_mayorista",
+            ):
+                mayorista = user.perfil_mayorista
+
+                if mayorista.estado == "pendiente_pago":
+                    request.session["mayorista_registrado_nombre"] = mayorista.nombre
+
+                    return redirect("portal_registro_mayorista_confirmacion")
+
+                if mayorista.estado == "suspendido":
+                    error = (
+                        "Tu cuenta está suspendida. " "Comunícate con el administrador."
+                    )
+
+                else:
+                    login(request, user)
+
+                    return redirect("portal_mayorista_dashboard")
+
+            else:
+                error = "Correo o contraseña incorrectos."
     else:
         formulario = LoginEmailForm()
 
     return render(
-        request, "auth/login_mayorista.html", {"formulario": formulario, "error": error}
+        request,
+        "auth/login_mayorista.html",
+        {
+            "formulario": formulario,
+            "error": error,
+        },
     )
 
 
@@ -341,33 +345,13 @@ def logout_portal(request):
 
 @mayorista_required
 def mayorista_dashboard(request):
-    mayorista = request.mayorista
-    hoy = timezone.now().date()
+    contexto = request.mayorista.obtener_resumen_dashboard()
 
-    pedidos_qs = Pedido.objects.filter(mayorista=mayorista)
-
-    contexto = {
-        "pedidos_hoy": pedidos_qs.filter(
-            creado_en__date=hoy, estado="pendiente"
-        ).count(),
-        "ventas_mes": pedidos_qs.filter(
-            creado_en__year=hoy.year, creado_en__month=hoy.month
-        )
-        .exclude(estado="cancelado")
-        .aggregate(total=Sum("total"))["total"]
-        or 0,
-        "stock_critico": Producto.objects.filter(
-            mayorista=mayorista, activo=True, stock__lt=STOCK_CRITICO
-        ).count(),
-        "rendiciones_pendientes": Rendicion.objects.filter(
-            mayorista=mayorista, estado="pendiente"
-        ).count(),
-        "ultimos_pedidos": pedidos_qs.select_related("tienda").order_by("-creado_en")[
-            :5
-        ],
-    }
-
-    return render(request, "mayorista/dashboard.html", contexto)
+    return render(
+        request,
+        "mayorista/dashboard.html",
+        contexto,
+    )
 
 
 @mayorista_required
@@ -482,28 +466,28 @@ def mayorista_pedidos(request):
 
 @mayorista_required
 def mayorista_pedido_transicion(request, id, accion):
-    pedido = get_object_or_404(Pedido, pk=id, mayorista=request.mayorista)
+    pedido = get_object_or_404(
+        Pedido,
+        pk=id,
+        mayorista=request.mayorista,
+    )
 
-    with transaction.atomic():
-        if accion == "enviar_ruta" and pedido.estado == "validado":
-            pedido.estado = "en_camino"
-            pedido.save(update_fields=["estado"])
-        elif accion == "marcar_entregado" and pedido.estado == "en_camino":
-            pedido.estado = "entregado"
-            pedido.save(update_fields=["estado"])
-        elif accion == "cancelar" and pedido.estado in ("pendiente", "validado"):
-            for item in pedido.items.select_related("producto"):
-                item.producto.stock = item.producto.stock + item.cantidad
-                item.producto.save(update_fields=["stock"])
-            pedido.estado = "cancelado"
-            pedido.save(update_fields=["estado"])
-        else:
-            messages.error(
-                request, "No se puede aplicar esa acción al pedido en su estado actual."
-            )
-            return redirect("portal_mayorista_pedidos")
+    try:
+        pedido.aplicar_transicion(accion)
 
-    messages.success(request, "Pedido #%s actualizado." % pedido.id)
+    except ValueError as error:
+        messages.error(
+            request,
+            str(error),
+        )
+
+        return redirect("portal_mayorista_pedidos")
+
+    messages.success(
+        request,
+        "Pedido #%s actualizado." % pedido.id,
+    )
+
     return redirect("portal_mayorista_pedidos")
 
 
@@ -578,89 +562,14 @@ def mayorista_rendicion_confirmar(request, id):
     return redirect("portal_mayorista_rendiciones")
 
 
-MESES_ES = [
-    "Ene",
-    "Feb",
-    "Mar",
-    "Abr",
-    "May",
-    "Jun",
-    "Jul",
-    "Ago",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dic",
-]
-
-
 @mayorista_required
 def mayorista_reportes(request):
-    mayorista = request.mayorista
-    pedidos_entregados = Pedido.objects.filter(mayorista=mayorista, estado="entregado")
-
-    producto_estrella = (
-        PedidoItem.objects.filter(
-            pedido__mayorista=mayorista, pedido__estado="entregado"
-        )
-        .values("producto__nombre")
-        .annotate(total_vendido=Sum("cantidad"))
-        .order_by("-total_vendido")
-        .first()
-    )
-
-    mejor_tienda = (
-        pedidos_entregados.values("tienda__nombre")
-        .annotate(total_comprado=Sum("total"))
-        .order_by("-total_comprado")
-        .first()
-    )
-
-    mejor_vendedor = (
-        pedidos_entregados.exclude(vendedor__isnull=True)
-        .values("vendedor__nombre")
-        .annotate(total_vendido=Sum("total"))
-        .order_by("-total_vendido")
-        .first()
-    )
-
-    comisiones_pagadas = (
-        pedidos_entregados.aggregate(total=Sum("comision_plataforma"))["total"] or 0
-    )
-
-    hoy = timezone.now().date()
-    ventas_por_mes = []
-    for i in range(5, -1, -1):
-        indice_mes = hoy.month - 1 - i
-        anio = hoy.year + indice_mes // 12
-        mes = indice_mes % 12 + 1
-        total = (
-            pedidos_entregados.filter(
-                creado_en__year=anio, creado_en__month=mes
-            ).aggregate(total=Sum("total"))["total"]
-            or 0
-        )
-        ventas_por_mes.append(
-            {
-                "etiqueta": "%s %d" % (MESES_ES[mes - 1], anio % 100),
-                "total": float(total),
-                "actual": (anio == hoy.year and mes == hoy.month),
-            }
-        )
-
-    maximo = max((m["total"] for m in ventas_por_mes), default=0) or 1
+    contexto = request.mayorista.obtener_reporte_comercial()
 
     return render(
         request,
         "mayorista/reportes.html",
-        {
-            "producto_estrella": producto_estrella,
-            "mejor_tienda": mejor_tienda,
-            "mejor_vendedor": mejor_vendedor,
-            "comisiones_pagadas": comisiones_pagadas,
-            "ventas_por_mes": ventas_por_mes,
-            "maximo": maximo,
-        },
+        contexto,
     )
 
 
@@ -686,56 +595,14 @@ def mayorista_mi_cuenta(request):
 # ===================== Vendedor =====================
 
 
-def _productos_disponibles_vendedor(vendedor):
-    if vendedor.tipo_perfil == "especializado" and vendedor.producto_asignado_id:
-        return Producto.objects.filter(pk=vendedor.producto_asignado_id, activo=True)
-    return Producto.objects.filter(mayorista=vendedor.mayorista, activo=True)
-
-
 @vendedor_required
 def vendedor_dashboard(request):
-    vendedor = request.vendedor
-    hoy = timezone.now().date()
-
-    por_cobrar = (
-        Pago.objects.filter(
-            pedido__vendedor=vendedor, metodo="efectivo", estado="pendiente"
-        ).aggregate(total=Sum("monto"))["total"]
-        or 0
-    )
-
-    por_rendir = (
-        Pago.objects.filter(
-            pedido__vendedor=vendedor,
-            metodo="efectivo",
-            estado="confirmado",
-            rendicion__isnull=True,
-        ).aggregate(total=Sum("monto"))["total"]
-        or 0
-    )
-
-    pedidos_activos = (
-        Pedido.objects.filter(vendedor=vendedor)
-        .exclude(estado__in=["entregado", "cancelado"])
-        .count()
-    )
-
-    ventas_hoy = (
-        Pedido.objects.filter(vendedor=vendedor, creado_en__date=hoy)
-        .exclude(estado="cancelado")
-        .aggregate(total=Sum("total"))["total"]
-        or 0
-    )
+    contexto = request.vendedor.obtener_resumen_dashboard()
 
     return render(
         request,
         "vendedor/dashboard.html",
-        {
-            "por_cobrar": por_cobrar,
-            "por_rendir": por_rendir,
-            "pedidos_activos": pedidos_activos,
-            "ventas_hoy": ventas_hoy,
-        },
+        contexto,
     )
 
 
@@ -779,7 +646,7 @@ def vendedor_pedido_paso1(request):
 @vendedor_required
 def vendedor_pedido_paso2(request, tienda_id):
     tienda = get_object_or_404(Tienda, pk=tienda_id)
-    productos = _productos_disponibles_vendedor(request.vendedor)
+    productos = request.vendedor.obtener_productos_disponibles()
     carrito = request.session.get(CARRITO_VENDEDOR_SESSION_KEY, {})
 
     if request.method == "POST":
@@ -861,7 +728,7 @@ def vendedor_pedido_paso3(request):
         formulario = PedidoVendedorPagoForm(request.POST)
         if formulario.is_valid():
             try:
-                pedido = crear_pedido_validado(
+                pedido = Pedido.crear_validado(
                     tienda=tienda,
                     mayorista=request.vendedor.mayorista,
                     vendedor=request.vendedor,
@@ -918,38 +785,37 @@ def vendedor_marcar_cobrado(request, pago_id):
 @vendedor_required
 def vendedor_rendicion(request):
     vendedor = request.vendedor
-    pagos_por_rendir = Pago.objects.filter(
-        pedido__vendedor=vendedor,
-        metodo="efectivo",
-        estado="confirmado",
-        rendicion__isnull=True,
-    ).select_related("pedido")
+
+    pagos_por_rendir = Rendicion.obtener_pagos_por_rendir(vendedor)
 
     if request.method == "POST":
-        if not pagos_por_rendir.exists():
-            messages.error(request, "No tienes cobros pendientes por rendir.")
+        try:
+            Rendicion.crear_para_vendedor(vendedor)
+
+        except ValueError as error:
+            messages.error(
+                request,
+                str(error),
+            )
+
             return redirect("portal_vendedor_rendicion")
 
-        with transaction.atomic():
-            total_cobrado = pagos_por_rendir.aggregate(total=Sum("monto"))["total"] or 0
-            total_comision = sum(
-                (p.pedido.comision_plataforma for p in pagos_por_rendir), 0
-            )
+        messages.success(
+            request,
+            "Rendición enviada al mayorista.",
+        )
 
-            rendicion = Rendicion.objects.create(
-                vendedor=vendedor,
-                mayorista=vendedor.mayorista,
-                total_cobrado=total_cobrado,
-                total_comision=total_comision,
-            )
-            pagos_por_rendir.update(rendicion=rendicion)
-
-        messages.success(request, "Rendición enviada al mayorista.")
         return redirect("portal_vendedor_dashboard")
 
-    total = pagos_por_rendir.aggregate(total=Sum("monto"))["total"] or 0
+    total = Rendicion.calcular_total_por_rendir(vendedor)
+
     return render(
-        request, "vendedor/rendicion.html", {"pagos": pagos_por_rendir, "total": total}
+        request,
+        "vendedor/rendicion.html",
+        {
+            "pagos": pagos_por_rendir,
+            "total": total,
+        },
     )
 
 
@@ -1107,7 +973,7 @@ def tienda_entrega(request):
         formulario = PedidoEntregaForm(request.POST)
         if formulario.is_valid():
             try:
-                pedido = crear_pedido_validado(
+                pedido = Pedido.crear_validado(
                     tienda=request.tienda,
                     mayorista=mayorista,
                     vendedor=None,
@@ -1183,35 +1049,13 @@ def tienda_mis_pedidos(request):
 
 @admin_required
 def admin_dashboard(request):
-    hoy = timezone.now().date()
+    contexto = Mayorista.obtener_resumen_administracion()
 
-    pedidos_mes = Pedido.objects.filter(
-        creado_en__year=hoy.year, creado_en__month=hoy.month
-    ).exclude(estado="cancelado")
-
-    ingresos_suscripciones = (
-        Mayorista.objects.filter(
-            estado="activo", plan__in=["suscripcion", "mixto"]
-        ).aggregate(total=Sum("tarifa_anual"))["total"]
-        or 0
+    return render(
+        request,
+        "admin/dashboard.html",
+        contexto,
     )
-    ingresos_comisiones = (
-        pedidos_mes.filter(estado="entregado").aggregate(
-            total=Sum("comision_plataforma")
-        )["total"]
-        or 0
-    )
-
-    contexto = {
-        "mayoristas_activos": Mayorista.objects.filter(estado="activo").count(),
-        "pendientes_activacion": Mayorista.objects.filter(
-            estado="pendiente_pago"
-        ).count(),
-        "pedidos_mes": pedidos_mes.count(),
-        "ingresos_estimados": (ingresos_suscripciones / 12) + ingresos_comisiones,
-    }
-
-    return render(request, "admin/dashboard.html", contexto)
 
 
 @admin_required
@@ -1236,61 +1080,198 @@ def admin_mayoristas(request):
 @admin_required
 def admin_mayorista_toggle(request, id):
     mayorista = get_object_or_404(Mayorista, pk=id)
-    mayorista.estado = "suspendido" if mayorista.estado == "activo" else "activo"
+
+    # Una cuenta pendiente no puede activarse sin configuración comercial
+    if mayorista.estado == "pendiente_pago":
+        messages.warning(
+            request,
+            "Primero debes asignar un plan y configurar las condiciones "
+            f"comerciales de {mayorista.nombre}.",
+        )
+        return redirect("portal_admin_mayorista_configuracion", id=mayorista.id)
+
+    # Solo permite suspender o reactivar cuentas ya configuradas
+    if mayorista.estado == "activo":
+        mayorista.estado = "suspendido"
+        mensaje = f"{mayorista.nombre} ha sido suspendido."
+    else:
+        mayorista.estado = "activo"
+        mensaje = f"{mayorista.nombre} ha sido reactivado."
+
     mayorista.save(update_fields=["estado"])
-    messages.success(
-        request,
-        "%s ahora está %s."
-        % (mayorista.nombre, mayorista.get_estado_display().lower()),
-    )
+    messages.success(request, mensaje)
+
     return redirect("portal_admin_mayoristas")
 
 
 @admin_required
-def admin_configuracion(request):
-    config = PlataformaConfig.obtener()
+def admin_mayorista_configuracion(request, id):
+    mayorista = get_object_or_404(
+        Mayorista.objects.select_related("cuenta"),
+        pk=id,
+    )
+
+    estaba_pendiente = mayorista.estado == "pendiente_pago"
 
     if request.method == "POST":
-        formulario = PlataformaConfigForm(request.POST, instance=config)
-        if formulario.is_valid():
-            formulario.save()
-            messages.success(request, "Configuración comercial actualizada.")
-            return redirect("portal_admin_configuracion")
-    else:
-        formulario = PlataformaConfigForm(instance=config)
+        formulario = MayoristaConfigComercialForm(
+            request.POST,
+            instance=mayorista,
+        )
 
-    return render(request, "admin/configuracion.html", {"formulario": formulario})
+        if formulario.is_valid():
+            mayorista_configurado = formulario.save(commit=False)
+
+            if estaba_pendiente:
+                mayorista_configurado.estado = "activo"
+
+            mayorista_configurado.save()
+
+            if estaba_pendiente:
+                messages.success(
+                    request,
+                    "%s fue configurado y activado correctamente."
+                    % mayorista_configurado.nombre,
+                )
+            else:
+                messages.success(
+                    request,
+                    "Las condiciones comerciales de %s "
+                    "fueron actualizadas." % mayorista_configurado.nombre,
+                )
+
+            return redirect("portal_admin_mayoristas")
+    else:
+        formulario = MayoristaConfigComercialForm(instance=mayorista)
+
+    return render(
+        request,
+        "admin/mayorista_configuracion.html",
+        {
+            "formulario": formulario,
+            "mayorista": mayorista,
+            "activar_al_guardar": estaba_pendiente,
+        },
+    )
+
+
+@admin_required
+def admin_configuracion(request):
+    filtro = request.GET.get("filtro", "todos")
+    busqueda = request.GET.get("q", "").strip()
+
+    mayoristas = Mayorista.objects.select_related("cuenta").order_by("nombre")
+
+    # Los filtros corresponden únicamente al tipo de acuerdo comercial
+    filtros_permitidos = {
+        "sin_asignar",
+        "comision",
+        "suscripcion",
+        "mixto",
+    }
+
+    if filtro in filtros_permitidos:
+        mayoristas = mayoristas.filter(plan=filtro)
+    else:
+        filtro = "todos"
+
+    # En Configuración solamente necesitamos buscar por empresa
+    if busqueda:
+        mayoristas = mayoristas.filter(nombre__icontains=busqueda)
+
+    contexto = {
+        "mayoristas": mayoristas,
+        "filtro": filtro,
+        "busqueda": busqueda,
+    }
+
+    return render(
+        request,
+        "admin/configuracion.html",
+        contexto,
+    )
 
 
 @admin_required
 def admin_suscripciones(request):
-    hoy = timezone.now().date()
+    hoy = timezone.localdate()
+    limite_por_vencer = hoy + timedelta(days=30)
 
-    suscripciones = (
-        Mayorista.objects.filter(plan__in=["suscripcion", "mixto"])
+    filtro = request.GET.get("filtro", "todas")
+
+    filtros_permitidos = {
+        "todas",
+        "vigentes",
+        "por_vencer",
+        "vencidas",
+    }
+
+    if filtro not in filtros_permitidos:
+        filtro = "todas"
+
+    # Suscripciones solamente administra planes que tienen tarifa anual
+    suscripciones_base = (
+        Mayorista.objects
+        .filter(plan__in=["suscripcion", "mixto"])
         .select_related("cuenta")
-        .order_by("fecha_vencimiento")
     )
 
+    # Total anual contratado por mayoristas activos
     ingresos_anuales = (
-        suscripciones.filter(estado="activo").aggregate(total=Sum("tarifa_anual"))[
-            "total"
-        ]
+        suscripciones_base
+        .filter(estado="activo")
+        .aggregate(total=Sum("tarifa_anual"))["total"]
         or 0
     )
-    por_vencer = suscripciones.filter(
-        estado="activo", fecha_vencimiento__isnull=False, fecha_vencimiento__lt=hoy
+
+    # Cantidades utilizadas como alertas de renovación
+    cantidad_por_vencer = suscripciones_base.filter(
+        fecha_vencimiento__gte=hoy,
+        fecha_vencimiento__lte=limite_por_vencer,
     ).count()
+
+    cantidad_vencidas = suscripciones_base.filter(
+        fecha_vencimiento__lt=hoy
+    ).count()
+
+    # Filtros relacionados exclusivamente con el vencimiento
+    if filtro == "vigentes":
+        suscripciones = suscripciones_base.filter(
+            fecha_vencimiento__gt=limite_por_vencer
+        )
+
+    elif filtro == "por_vencer":
+        suscripciones = suscripciones_base.filter(
+            fecha_vencimiento__gte=hoy,
+            fecha_vencimiento__lte=limite_por_vencer,
+        )
+
+    elif filtro == "vencidas":
+        suscripciones = suscripciones_base.filter(
+            fecha_vencimiento__lt=hoy
+        )
+
+    else:
+        suscripciones = suscripciones_base
+
+    suscripciones = suscripciones.order_by(
+        "fecha_vencimiento",
+        "nombre",
+    )
+
+    contexto = {
+        "suscripciones": suscripciones,
+        "ingresos_anuales": ingresos_anuales,
+        "cantidad_por_vencer": cantidad_por_vencer,
+        "cantidad_vencidas": cantidad_vencidas,
+        "filtro": filtro,
+        "hoy": hoy,
+    }
 
     return render(
         request,
         "admin/suscripciones.html",
-        {
-            "suscripciones": suscripciones,
-            "ingresos_anuales": ingresos_anuales,
-            "por_vencer": por_vencer,
-            "hoy": hoy,
-        },
+        contexto,
     )
 
 

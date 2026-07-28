@@ -1,9 +1,8 @@
 import re
-from datetime import timedelta
-
 from django import forms
-from django.contrib.auth.models import User
+from decimal import Decimal
 from django.utils import timezone
+from django.contrib.auth.models import User
 from django.contrib.auth.forms import AuthenticationForm
 from appDjango.models import Mayorista, Vendedor, Tienda, Producto, PlataformaConfig
 
@@ -14,13 +13,32 @@ PIN_RE = re.compile(r"^[0-9]{4}$")
 class MayoristaRegistroForm(forms.Form):
     nombre = forms.CharField(label="Nombre de la empresa", max_length=255)
     email = forms.EmailField(label="Correo electrónico")
+    telefono = forms.CharField(
+        label="Número de celular",
+        max_length=15,
+        widget=forms.TextInput(
+            attrs={
+                "placeholder": "Ej: 0991234567",
+                "inputmode": "tel",
+            }
+        ),
+    )
     password = forms.CharField(
         label="Contraseña", widget=forms.PasswordInput, min_length=6
     )
     categoria = forms.ChoiceField(
         choices=Mayorista.CATEGORIA_CHOICES, label="Categoría"
     )
-    plan = forms.ChoiceField(choices=Mayorista.PLAN_CHOICES, label="Plan")
+
+    def clean_telefono(self):
+        telefono = self.cleaned_data["telefono"].strip()
+
+        if not TELEFONO_RE.match(telefono):
+            raise forms.ValidationError(
+                "Ingresa un número válido utilizando únicamente números."
+            )
+
+        return telefono
 
     def clean_email(self):
         email = self.cleaned_data["email"].lower()
@@ -29,22 +47,6 @@ class MayoristaRegistroForm(forms.Form):
         return email
 
     def guardar(self):
-        config = PlataformaConfig.obtener()
-        plan = self.cleaned_data["plan"]
-
-        fecha_vencimiento = None
-        if plan == "suscripcion":
-            tarifa_anual = config.tarifa_suscripcion_anual
-            porcentaje_comision = 0
-            fecha_vencimiento = timezone.now().date() + timedelta(days=365)
-        elif plan == "comision":
-            tarifa_anual = 0
-            porcentaje_comision = config.porcentaje_comision_default
-        else:
-            tarifa_anual = config.tarifa_plan_mixto
-            porcentaje_comision = config.porcentaje_comision_mixto
-            fecha_vencimiento = timezone.now().date() + timedelta(days=365)
-
         user = User.objects.create_user(
             username=self.cleaned_data["email"],
             email=self.cleaned_data["email"],
@@ -54,12 +56,13 @@ class MayoristaRegistroForm(forms.Form):
         return Mayorista.objects.create(
             cuenta=user,
             nombre=self.cleaned_data["nombre"],
+            telefono=self.cleaned_data["telefono"],
             categoria=self.cleaned_data["categoria"],
-            plan=plan,
-            tarifa_anual=tarifa_anual,
-            porcentaje_comision=porcentaje_comision,
+            plan="sin_asignar",
+            tarifa_anual=0,
+            porcentaje_comision=0,
             estado="pendiente_pago",
-            fecha_vencimiento=fecha_vencimiento,
+            fecha_vencimiento=None,
         )
 
 
@@ -241,6 +244,138 @@ class ProductoMayoristaForm(forms.ModelForm):
 
 class AjusteStockForm(forms.Form):
     stock = forms.IntegerField(min_value=0, label="Stock")
+
+
+class MayoristaConfigComercialForm(forms.ModelForm):
+    plan = forms.ChoiceField(
+        label="Plan comercial",
+        choices=[
+            ("", "Selecciona un plan"),
+            ("comision", "Solo comisión"),
+            ("suscripcion", "Suscripción anual"),
+            ("mixto", "Mixto"),
+        ],
+    )
+
+    tarifa_anual = forms.DecimalField(
+        label="Costo anual acordado ($)",
+        required=False,
+        min_value=Decimal("0.00"),
+        max_digits=10,
+        decimal_places=2,
+        widget=forms.NumberInput(
+            attrs={
+                "step": "0.01",
+                "min": "0",
+                "placeholder": "Ej: 900.00",
+            }
+        ),
+    )
+
+    porcentaje_comision = forms.DecimalField(
+        label="Porcentaje de comisión acordado (%)",
+        required=False,
+        min_value=Decimal("0.00"),
+        max_value=Decimal("100.00"),
+        max_digits=5,
+        decimal_places=2,
+        widget=forms.NumberInput(
+            attrs={
+                "step": "0.01",
+                "min": "0",
+                "max": "100",
+                "placeholder": "Ej: 3.50",
+            }
+        ),
+    )
+
+    fecha_vencimiento = forms.DateField(
+        label="Fecha de vencimiento",
+        required=False,
+        widget=forms.DateInput(
+            format="%Y-%m-%d",
+            attrs={
+                "type": "date",
+            },
+        ),
+    )
+
+    class Meta:
+        model = Mayorista
+
+        fields = [
+            "plan",
+            "tarifa_anual",
+            "porcentaje_comision",
+            "fecha_vencimiento",
+        ]
+
+    def clean(self):
+        cleaned_data = super().clean()
+
+        plan = cleaned_data.get("plan")
+        tarifa_anual = cleaned_data.get("tarifa_anual")
+        porcentaje_comision = cleaned_data.get("porcentaje_comision")
+        fecha_vencimiento = cleaned_data.get("fecha_vencimiento")
+
+        if plan == "comision":
+            if porcentaje_comision is None or porcentaje_comision <= 0:
+                self.add_error(
+                    "porcentaje_comision",
+                    "El plan por comisión necesita un porcentaje mayor que cero.",
+                )
+
+            cleaned_data["tarifa_anual"] = Decimal("0.00")
+            cleaned_data["fecha_vencimiento"] = None
+
+        elif plan == "suscripcion":
+            if tarifa_anual is None or tarifa_anual <= 0:
+                self.add_error(
+                    "tarifa_anual",
+                    "La suscripción necesita un costo anual mayor que cero.",
+                )
+
+            cleaned_data["porcentaje_comision"] = Decimal("0.00")
+
+            if fecha_vencimiento is None:
+                self.add_error(
+                    "fecha_vencimiento",
+                    "Debes indicar la fecha de vencimiento de la suscripción.",
+                )
+
+        elif plan == "mixto":
+            if tarifa_anual is None or tarifa_anual <= 0:
+                self.add_error(
+                    "tarifa_anual",
+                    "El plan mixto necesita un costo anual mayor que cero.",
+                )
+
+            if porcentaje_comision is None or porcentaje_comision <= 0:
+                self.add_error(
+                    "porcentaje_comision",
+                    "El plan mixto necesita un porcentaje mayor que cero.",
+                )
+
+            if fecha_vencimiento is None:
+                self.add_error(
+                    "fecha_vencimiento",
+                    "Debes indicar la fecha de vencimiento del plan mixto.",
+                )
+
+        else:
+            raise forms.ValidationError("Selecciona un plan comercial válido.")
+
+        if (
+            fecha_vencimiento is not None
+            and plan in ["suscripcion", "mixto"]
+            and fecha_vencimiento < timezone.localdate()
+        ):
+            self.add_error(
+                "fecha_vencimiento",
+                "La fecha de vencimiento no puede estar en el pasado.",
+            )
+
+        return cleaned_data
 
 
 class PlataformaConfigForm(forms.ModelForm):

@@ -3,39 +3,337 @@
 {% block title %}Dashboard{% endblock %}
 
 {% block content %}
+
+  <!-- Encabezado -->
   <div class="pagina-cabecera">
+
     <div class="pagina-cabecera-titulo">
-      <div class="pagina-cabecera-icono"><i class="fas fa-shield-alt"></i></div>
+
+      <div class="pagina-cabecera-icono">
+        <i class="fas fa-shield-alt"></i>
+      </div>
+
       <div>
         <h1>Dashboard</h1>
-        <p class="subtitulo">Resumen general de la plataforma ISBEN Solution.</p>
+        <p class="subtitulo">
+          Resumen comercial y operativo de ISBEN Solution.
+        </p>
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- Resumen de empresas -->
+  <section class="admin-dashboard-seccion">
+
+    <div class="admin-seccion-titulo">
+      <div>
+        <h2>Resumen de empresas</h2>
+        <p>Estado actual de los mayoristas registrados.</p>
+      </div>
+
+      <a href="{% url 'portal_admin_mayoristas' %}"
+         class="admin-enlace-seccion">
+        Ver todos
+        <i class="fas fa-arrow-right"></i>
+      </a>
+    </div>
+
+
+    <div class="admin-empresas-grid">
+
+      <!-- Mayoristas activos -->
+      <a href="{% url 'portal_admin_mayoristas' %}?estado=activo"
+         class="admin-empresa-card">
+
+        <div class="admin-empresa-icono admin-icono-activo">
+          <i class="fas fa-building"></i>
+        </div>
+
+        <div class="admin-empresa-contenido">
+          <span>Mayoristas activos</span>
+          <strong>{{ mayoristas_activos }}</strong>
+        </div>
+
+        <i class="fas fa-chevron-right admin-card-flecha"></i>
+
+      </a>
+
+
+      <!-- Pendientes -->
+      <a href="{% url 'portal_admin_mayoristas' %}?estado=pendiente_pago"
+         class="admin-empresa-card {% if pendientes_activacion > 0 %}admin-empresa-alerta{% endif %}">
+
+        <div class="admin-empresa-icono admin-icono-pendiente">
+          <i class="fas fa-user-clock"></i>
+        </div>
+
+        <div class="admin-empresa-contenido">
+          <span>Pendientes de revisión</span>
+          <strong>{{ pendientes_activacion }}</strong>
+        </div>
+
+        <i class="fas fa-chevron-right admin-card-flecha"></i>
+
+      </a>
+
+    </div>
+
+  </section>
+
+
+  <!-- Rendimiento del mes -->
+  <section class="admin-dashboard-seccion">
+
+    <div class="admin-seccion-titulo">
+      <div>
+        <h2>Rendimiento del mes</h2>
+        <p>Indicadores económicos y operativos del mes actual.</p>
       </div>
     </div>
-  </div>
 
-  <div class="portal-grid">
-    <a href="{% url 'portal_admin_mayoristas' %}?estado=activo" class="stat-card stat-card-link">
-      <div class="stat-card-icon stat-icon-naranja"><i class="fas fa-building"></i></div>
-      <h2>{{ mayoristas_activos }}</h2>
-      <p>Mayoristas activos</p>
-    </a>
 
-    <a href="{% url 'portal_admin_mayoristas' %}?estado=pendiente_pago" class="stat-card stat-card-link {% if pendientes_activacion > 0 %}stat-card-alerta{% endif %}">
-      <div class="stat-card-icon {% if pendientes_activacion > 0 %}stat-icon-rojo{% else %}stat-icon-dorado{% endif %}"><i class="fas fa-user-clock"></i></div>
-      <h2>{{ pendientes_activacion }}</h2>
-      <p>Pendientes de activación</p>
-    </a>
+    <div class="admin-kpi-grid">
 
-    <div class="stat-card">
-      <div class="stat-card-icon stat-icon-dorado"><i class="fas fa-shopping-cart"></i></div>
-      <h2>{{ pedidos_mes }}</h2>
-      <p>Pedidos del mes</p>
+      <!-- Ventas -->
+      <div class="admin-kpi-card">
+
+        <div class="stat-card-icon stat-icon-naranja">
+          <i class="fas fa-chart-line"></i>
+        </div>
+
+        <span class="admin-kpi-etiqueta">Ventas registradas</span>
+
+        <strong class="admin-kpi-valor">
+          ${{ ventas_mes|floatformat:2 }}
+        </strong>
+
+        <p>Volumen comercial del mes</p>
+
+      </div>
+
+
+      <!-- Ingresos de la plataforma -->
+      <div class="admin-kpi-card admin-kpi-destacado">
+
+        <div class="admin-kpi-icono-destacado">
+          <i class="fas fa-dollar-sign"></i>
+        </div>
+
+        <span class="admin-kpi-etiqueta">
+          Ingresos de la plataforma
+        </span>
+
+        <strong class="admin-kpi-valor">
+          ${{ ingresos_plataforma|floatformat:2 }}
+        </strong>
+
+        <p>Suscripciones mensuales y comisiones</p>
+
+      </div>
+
+
+      <!-- Ticket promedio -->
+      <div class="admin-kpi-card">
+
+        <div class="stat-card-icon stat-icon-dorado">
+          <i class="fas fa-receipt"></i>
+        </div>
+
+        <span class="admin-kpi-etiqueta">Ticket promedio</span>
+
+        <strong class="admin-kpi-valor">
+          ${{ ticket_promedio|floatformat:2 }}
+        </strong>
+
+        <p>Promedio por pedido no cancelado</p>
+
+      </div>
+
+
+      <!-- Tasa de entrega -->
+      <div class="admin-kpi-card">
+
+        <div class="stat-card-icon stat-icon-verde">
+          <i class="fas fa-check-circle"></i>
+        </div>
+
+        <span class="admin-kpi-etiqueta">Tasa de entrega</span>
+
+        <strong class="admin-kpi-valor">
+          {{ tasa_entrega|floatformat:1 }}%
+        </strong>
+
+        <p>Pedidos completados correctamente</p>
+
+      </div>
+
     </div>
 
-    <div class="stat-card" style="background:linear-gradient(135deg, var(--isben-naranja), #FF6A2B); border-color:var(--isben-naranja);">
-      <div class="stat-card-icon" style="background:rgba(255,255,255,0.2); color:#fff;"><i class="fas fa-dollar-sign"></i></div>
-      <h2 style="color:#fff;">${{ ingresos_estimados|floatformat:2 }}</h2>
-      <p style="color:#FFE4DB;">Ingresos estimados del mes (suscripciones + comisiones)</p>
-    </div>
+  </section>
+
+
+  <!-- Información inferior -->
+  <div class="admin-dashboard-detalle">
+
+    <!-- Resumen de pedidos -->
+    <section class="admin-panel-resumen">
+
+      <div class="admin-panel-cabecera">
+        <div>
+          <h2>Resumen de pedidos</h2>
+          <p>Situación de los pedidos registrados este mes.</p>
+        </div>
+
+        <div class="admin-panel-icono">
+          <i class="fas fa-shopping-cart"></i>
+        </div>
+      </div>
+
+
+      <div class="admin-resumen-lista">
+
+        <div class="admin-resumen-fila">
+          <span>
+            <i class="fas fa-list"></i>
+            Total registrados
+          </span>
+
+          <strong>{{ pedidos_total }}</strong>
+        </div>
+
+
+        <div class="admin-resumen-fila">
+          <span>
+            <i class="fas fa-truck"></i>
+            En proceso
+          </span>
+
+          <strong class="admin-texto-amber">
+            {{ pedidos_en_proceso }}
+          </strong>
+        </div>
+
+
+        <div class="admin-resumen-fila">
+          <span>
+            <i class="fas fa-check-circle"></i>
+            Entregados
+          </span>
+
+          <strong class="admin-texto-verde">
+            {{ pedidos_entregados }}
+          </strong>
+        </div>
+
+
+        <div class="admin-resumen-fila">
+          <span>
+            <i class="fas fa-times-circle"></i>
+            Cancelados
+          </span>
+
+          <strong class="admin-texto-rojo">
+            {{ pedidos_cancelados }}
+          </strong>
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- Alertas de suscripciones -->
+    <section class="admin-panel-resumen">
+
+      <div class="admin-panel-cabecera">
+        <div>
+          <h2>Alertas comerciales</h2>
+          <p>Contratos que necesitan atención del administrador.</p>
+        </div>
+
+        <div class="admin-panel-icono">
+          <i class="fas fa-bell"></i>
+        </div>
+      </div>
+
+
+      <div class="admin-alertas-lista">
+
+        {% if suscripciones_por_vencer > 0 %}
+
+          <a href="{% url 'portal_admin_suscripciones' %}?filtro=por_vencer"
+             class="admin-alerta-item admin-alerta-amber">
+
+            <div>
+              <i class="fas fa-clock"></i>
+
+              <span>
+                <strong>{{ suscripciones_por_vencer }}</strong>
+                suscripción{{ suscripciones_por_vencer|pluralize:"es" }}
+                por renovar
+              </span>
+            </div>
+
+            <i class="fas fa-chevron-right"></i>
+
+          </a>
+
+        {% endif %}
+
+
+        {% if suscripciones_vencidas > 0 %}
+
+          <a href="{% url 'portal_admin_suscripciones' %}?filtro=vencidas"
+             class="admin-alerta-item admin-alerta-roja">
+
+            <div>
+              <i class="fas fa-exclamation-triangle"></i>
+
+              <span>
+                <strong>{{ suscripciones_vencidas }}</strong>
+                suscripción{{ suscripciones_vencidas|pluralize:"es" }}
+                vencida{{ suscripciones_vencidas|pluralize:"s" }}
+              </span>
+            </div>
+
+            <i class="fas fa-chevron-right"></i>
+
+          </a>
+
+        {% endif %}
+
+
+        {% if suscripciones_por_vencer == 0 and suscripciones_vencidas == 0 %}
+
+          <div class="admin-sin-alertas">
+
+            <i class="fas fa-check-circle"></i>
+
+            <div>
+              <strong>Todo se encuentra al día</strong>
+              <p>No existen suscripciones pendientes de renovación.</p>
+            </div>
+
+          </div>
+
+        {% endif %}
+
+      </div>
+
+
+      <a href="{% url 'portal_admin_suscripciones' %}"
+         class="admin-ver-suscripciones">
+
+        Revisar suscripciones
+        <i class="fas fa-arrow-right"></i>
+
+      </a>
+
+    </section>
+
   </div>
+
 {% endblock %}

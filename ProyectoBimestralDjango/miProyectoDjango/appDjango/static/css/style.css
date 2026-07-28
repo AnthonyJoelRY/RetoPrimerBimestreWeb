@@ -2651,3 +2651,1019 @@ th, td { border-bottom-color: #EBDCC6; }
   color: var(--isben-oscuro);
   margin: 6px 0 10px;
 }
+
+/* =====================================================
+   Registro de mayorista con información de planes
+===================================================== */
+
+.registro-mayorista-pagina {
+  padding: 32px 20px;
+  align-items: center;
+  justify-content: center;
+}
+
+.registro-mayorista-contenedor {
+  position: relative;
+  z-index: 2;
+  width: min(1180px, 100%);
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 26px;
+  align-items: stretch;
+}
+
+.registro-mayorista-formulario {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+.registro-planes-card {
+  padding: 34px;
+  border: 1px solid #f0d8c5;
+  border-radius: 22px;
+  background: #ffffff;
+  box-shadow: 0 14px 35px rgba(26, 34, 56, 0.1);
+}
+
+.registro-planes-icono {
+  width: 58px;
+  height: 58px;
+  margin-bottom: 18px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff0e8;
+  color: #ff3b1f;
+  font-size: 25px;
+}
+
+.registro-planes-card h2 {
+  margin: 0 0 10px;
+  color: #15213b;
+  font-size: 27px;
+}
+
+.registro-planes-introduccion {
+  margin: 0 0 24px;
+  color: #687083;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.registro-planes-tabla-contenedor {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #eee3d9;
+  border-radius: 15px;
+}
+
+.registro-planes-tabla {
+  width: 100%;
+  min-width: 570px;
+  border-collapse: collapse;
+}
+
+.registro-planes-tabla th {
+  padding: 14px;
+  background: #fff7f1;
+  color: #18233d;
+  font-size: 13px;
+  text-align: left;
+  border-bottom: 1px solid #eedccc;
+}
+
+.registro-planes-tabla td {
+  padding: 16px 14px;
+  color: #5e6675;
+  font-size: 13px;
+  line-height: 1.5;
+  vertical-align: top;
+  border-bottom: 1px solid #f0e7df;
+}
+
+.registro-planes-tabla tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.registro-plan-nombre {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.plan-comision {
+  color: #e83e24;
+}
+
+.plan-suscripcion {
+  color: #b88400;
+}
+
+.plan-mixto {
+  color: #6f42c1;
+}
+
+.registro-planes-aviso {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  margin-top: 22px;
+  padding: 18px;
+  border: 1px solid #f3cf8b;
+  border-radius: 14px;
+  background: #fff9eb;
+  color: #785b13;
+}
+
+.registro-planes-aviso > i {
+  margin-top: 2px;
+  font-size: 20px;
+}
+
+.registro-planes-aviso strong {
+  color: #5f470d;
+}
+
+.registro-planes-aviso p {
+  margin: 5px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.registro-planes-contacto {
+  margin-top: 22px;
+  padding-top: 20px;
+  border-top: 1px solid #eee5dd;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.registro-planes-contacto span {
+  color: #687083;
+  font-size: 14px;
+}
+
+.registro-planes-contacto a {
+  color: #ff3b1f;
+  font-size: 18px;
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.registro-planes-contacto a:hover {
+  color: #d92b13;
+}
+
+@media (max-width: 900px) {
+  .registro-mayorista-contenedor {
+    grid-template-columns: 1fr;
+    max-width: 650px;
+  }
+
+  .registro-planes-card {
+    padding: 26px 22px;
+  }
+}
+
+@media (max-width: 560px) {
+  .registro-mayorista-pagina {
+    padding: 20px 12px;
+  }
+
+  .registro-planes-card {
+    padding: 22px 16px;
+  }
+
+  .registro-planes-contacto {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* =====================================================
+   Configuración comercial individual
+===================================================== */
+
+.config-comercial-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.75fr) minmax(0, 1.45fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.config-empresa-card,
+.config-formulario-card {
+  padding: 28px;
+  border: 1px solid #eadfd5;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 9px 25px rgba(26, 34, 56, 0.07);
+}
+
+.config-empresa-card {
+  text-align: center;
+}
+
+.config-empresa-avatar {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 16px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff0e8;
+  color: #ff3b1f;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.config-empresa-card h2 {
+  margin: 0 0 8px;
+  color: #17223d;
+  font-size: 23px;
+}
+
+.config-empresa-categoria {
+  display: inline-flex;
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: #fff7f1;
+  color: #b64a2e;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.config-empresa-datos {
+  margin-top: 25px;
+  text-align: left;
+}
+
+.config-empresa-dato {
+  display: flex;
+  gap: 13px;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid #eee6df;
+}
+
+.config-empresa-dato:last-child {
+  border-bottom: none;
+}
+
+.config-empresa-dato > i {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff5ee;
+  color: #f04a2f;
+}
+
+.config-empresa-dato div {
+  min-width: 0;
+}
+
+.config-empresa-dato span {
+  display: block;
+  margin-bottom: 3px;
+  color: #7b8290;
+  font-size: 12px;
+}
+
+.config-empresa-dato strong {
+  display: block;
+  color: #263149;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.config-activacion-aviso {
+  display: flex;
+  gap: 12px;
+  margin-top: 22px;
+  padding: 16px;
+  border: 1px solid #f2ce82;
+  border-radius: 13px;
+  background: #fff9e9;
+  color: #715817;
+  text-align: left;
+}
+
+.config-activacion-aviso > i {
+  margin-top: 3px;
+  font-size: 18px;
+}
+
+.config-activacion-aviso p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.config-formulario-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 26px;
+}
+
+.config-formulario-cabecera h2 {
+  margin: 0 0 5px;
+  color: #17223d;
+  font-size: 23px;
+}
+
+.config-formulario-cabecera p {
+  margin: 0;
+  color: #737b8b;
+}
+
+.config-formulario-icono {
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff0e8;
+  color: #ff3b1f;
+  font-size: 21px;
+}
+
+.config-formulario-card select,
+.config-formulario-card input {
+  width: 100%;
+}
+
+.config-comercial-campo {
+  transition: opacity 0.2s ease;
+}
+
+.config-comercial-campo.oculto {
+  display: none;
+}
+
+.config-formulario-card small {
+  display: block;
+  margin-top: 7px;
+  color: #7b8290;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.config-plan-ayuda {
+  color: #b55035 !important;
+}
+
+.config-formulario-acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 28px;
+  padding-top: 22px;
+  border-top: 1px solid #eee4dc;
+}
+
+.config-boton-secundario,
+.config-boton-guardar {
+  min-height: 44px;
+  padding: 11px 18px;
+  border-radius: 10px;
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.config-boton-secundario {
+  border: 1px solid #d7dce4;
+  background: #ffffff;
+  color: #4f586a;
+}
+
+.config-boton-guardar {
+  border: none;
+  background: #ff3b1f;
+  color: #ffffff;
+}
+
+.config-boton-guardar:hover {
+  background: #dc2d14;
+}
+
+@media (max-width: 900px) {
+  .config-comercial-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .config-empresa-card,
+  .config-formulario-card {
+    padding: 20px 16px;
+  }
+
+  .config-formulario-acciones {
+    flex-direction: column-reverse;
+  }
+
+  .config-boton-secundario,
+  .config-boton-guardar {
+    width: 100%;
+  }
+}
+
+/* =====================================================
+   Listado de configuraciones comerciales
+===================================================== */
+
+.config-listado-resumen {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.config-resumen-chip {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding: 18px;
+  border: 1px solid #eadfd5;
+  border-radius: 15px;
+  background: #ffffff;
+}
+
+.config-resumen-chip > i {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f3f5f8;
+  color: #4f5c73;
+  font-size: 18px;
+}
+
+.config-resumen-chip span {
+  display: block;
+  color: #747d8e;
+  font-size: 12px;
+}
+
+.config-resumen-chip strong {
+  display: block;
+  margin-top: 2px;
+  color: #17223d;
+  font-size: 22px;
+}
+
+.config-chip-pendiente > i {
+  background: #fff5d9;
+  color: #b98300;
+}
+
+.config-chip-configurado > i {
+  background: #eee8ff;
+  color: #6941c6;
+}
+
+.config-chip-activo > i {
+  background: #e4f8ec;
+  color: #23884f;
+}
+
+.config-buscador {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin: 20px 0;
+}
+
+.config-buscador-campo {
+  position: relative;
+  flex: 1;
+  max-width: 460px;
+}
+
+.config-buscador-campo > i {
+  position: absolute;
+  top: 50%;
+  left: 15px;
+  color: #858d9c;
+  transform: translateY(-50%);
+}
+
+.config-buscador-campo input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 14px 10px 42px;
+  border: 1px solid #dce0e7;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.config-buscador button,
+.config-buscador > a {
+  min-height: 44px;
+  padding: 10px 17px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.config-buscador button {
+  border: none;
+  background: #ff3b1f;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.config-buscador > a {
+  border: 1px solid #d9dde5;
+  background: #ffffff;
+  color: #525c70;
+}
+
+.config-tabla-card {
+  overflow-x: auto;
+}
+
+.config-tabla-card table {
+  min-width: 1050px;
+}
+
+.config-empresa-tabla {
+  display: flex;
+  gap: 11px;
+  align-items: center;
+}
+
+.config-tabla-avatar {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff0e8;
+  color: #ed4428;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.config-empresa-tabla strong,
+.config-empresa-tabla span {
+  display: block;
+}
+
+.config-empresa-tabla span {
+  margin-top: 3px;
+  color: #7b8391;
+  font-size: 12px;
+}
+
+.config-contacto-tabla span {
+  display: block;
+  margin: 3px 0;
+  white-space: nowrap;
+}
+
+.config-contacto-tabla i {
+  width: 18px;
+  color: #ed4a2e;
+}
+
+.config-no-aplica {
+  color: #969dab;
+}
+
+@media (max-width: 1000px) {
+  .config-listado-resumen {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .config-listado-resumen {
+    grid-template-columns: 1fr;
+  }
+
+  .config-buscador {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .config-buscador-campo {
+    max-width: none;
+  }
+}
+
+/* ==================================================
+   Dashboard del administrador
+   ================================================== */
+
+.admin-dashboard-seccion {
+  margin-bottom: 30px;
+}
+
+.admin-seccion-titulo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 15px;
+}
+
+.admin-seccion-titulo h2 {
+  margin: 0 0 3px;
+  font-size: 19px;
+  color: var(--isben-oscuro);
+}
+
+.admin-seccion-titulo p {
+  margin: 0;
+  color: #687386;
+  font-size: 14px;
+}
+
+.admin-enlace-seccion,
+.admin-ver-suscripciones {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--isben-naranja);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.admin-enlace-seccion:hover,
+.admin-ver-suscripciones:hover {
+  color: var(--isben-naranja-oscuro);
+}
+
+
+/* Resumen de empresas */
+
+.admin-empresas-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.admin-empresa-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 105px;
+  padding: 20px;
+  background: #ffffff;
+  border: 1px solid #eadbc8;
+  border-radius: 16px;
+  color: var(--isben-oscuro);
+  text-decoration: none;
+  box-shadow: 0 4px 12px rgba(52, 30, 13, 0.05);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.admin-empresa-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(52, 30, 13, 0.09);
+}
+
+.admin-empresa-alerta {
+  border-color: #efc36f;
+  background: #fffdf7;
+}
+
+.admin-empresa-icono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 15px;
+  font-size: 21px;
+  flex-shrink: 0;
+}
+
+.admin-icono-activo {
+  color: #12804a;
+  background: #dff7e9;
+}
+
+.admin-icono-pendiente {
+  color: #b66b00;
+  background: #fff0cc;
+}
+
+.admin-empresa-contenido {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.admin-empresa-contenido span {
+  color: #687386;
+  font-size: 14px;
+}
+
+.admin-empresa-contenido strong {
+  color: var(--isben-oscuro);
+  font-size: 30px;
+  line-height: 1.1;
+}
+
+.admin-card-flecha {
+  margin-left: auto;
+  color: #a3aab6;
+}
+
+
+/* Indicadores económicos */
+
+.admin-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.admin-kpi-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 210px;
+  padding: 24px;
+  background: #ffffff;
+  border: 1px solid #eadbc8;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(52, 30, 13, 0.05);
+}
+
+.admin-kpi-etiqueta {
+  margin-top: 17px;
+  color: #687386;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.admin-kpi-valor {
+  margin-top: 4px;
+  color: var(--isben-naranja);
+  font-size: 29px;
+  line-height: 1.2;
+}
+
+.admin-kpi-card p {
+  margin: 9px 0 0;
+  color: #687386;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.admin-kpi-destacado {
+  color: #ffffff;
+  border-color: var(--isben-naranja);
+  background: linear-gradient(
+    135deg,
+    var(--isben-naranja),
+    #ff6a2b
+  );
+}
+
+.admin-kpi-destacado .admin-kpi-etiqueta,
+.admin-kpi-destacado .admin-kpi-valor {
+  color: #ffffff;
+}
+
+.admin-kpi-destacado p {
+  color: #ffe4db;
+}
+
+.admin-kpi-icono-destacado {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  border-radius: 14px;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.2);
+  font-size: 20px;
+}
+
+.stat-icon-verde {
+  color: #12804a;
+  background: #dff7e9;
+}
+
+
+/* Paneles inferiores */
+
+.admin-dashboard-detalle {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.admin-panel-resumen {
+  padding: 24px;
+  background: #ffffff;
+  border: 1px solid #eadbc8;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(52, 30, 13, 0.05);
+}
+
+.admin-panel-cabecera {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #eee1d1;
+}
+
+.admin-panel-cabecera h2 {
+  margin: 0 0 4px;
+  font-size: 18px;
+  color: var(--isben-oscuro);
+}
+
+.admin-panel-cabecera p {
+  margin: 0;
+  color: #687386;
+  font-size: 13px;
+}
+
+.admin-panel-icono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 43px;
+  height: 43px;
+  border-radius: 12px;
+  color: var(--isben-naranja);
+  background: #ffebe4;
+  flex-shrink: 0;
+}
+
+
+/* Resumen de pedidos */
+
+.admin-resumen-lista {
+  margin-top: 8px;
+}
+
+.admin-resumen-fila {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 14px 3px;
+  border-bottom: 1px solid #f0e6da;
+}
+
+.admin-resumen-fila:last-child {
+  border-bottom: none;
+}
+
+.admin-resumen-fila span {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #505b6d;
+}
+
+.admin-resumen-fila span i {
+  width: 18px;
+  color: #929aa8;
+}
+
+.admin-resumen-fila strong {
+  font-size: 18px;
+  color: var(--isben-oscuro);
+}
+
+.admin-texto-amber {
+  color: #b66b00 !important;
+}
+
+.admin-texto-verde {
+  color: #12804a !important;
+}
+
+.admin-texto-rojo {
+  color: #c52c3c !important;
+}
+
+
+/* Alertas comerciales */
+
+.admin-alertas-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  margin: 18px 0;
+}
+
+.admin-alerta-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  text-decoration: none;
+}
+
+.admin-alerta-item > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-alerta-amber {
+  color: #9a5c00;
+  background: #fff3d8;
+  border: 1px solid #f2d08d;
+}
+
+.admin-alerta-roja {
+  color: #b92335;
+  background: #ffe8eb;
+  border: 1px solid #f4b9c1;
+}
+
+.admin-sin-alertas {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 16px;
+  color: #126f43;
+  background: #e5f8ed;
+  border: 1px solid #bde8ce;
+  border-radius: 12px;
+}
+
+.admin-sin-alertas > i {
+  font-size: 22px;
+}
+
+.admin-sin-alertas strong {
+  display: block;
+  margin-bottom: 3px;
+}
+
+.admin-sin-alertas p {
+  margin: 0;
+  color: #42745a;
+  font-size: 13px;
+}
+
+
+/* Adaptación para pantallas pequeñas */
+
+@media (max-width: 1150px) {
+  .admin-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .admin-empresas-grid,
+  .admin-kpi-grid,
+  .admin-dashboard-detalle {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-seccion-titulo {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .admin-kpi-card {
+    min-height: auto;
+  }
+}
