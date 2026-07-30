@@ -43,10 +43,10 @@ PRESENTACION-1BIM/
 | Sprint 5 | Módulo de pagos (efectivo y digital) |
 | Sprint 6 | Panel de administrador, pruebas de integración |
 
-## Prototipo
+## App Web
 
-- App: https://wholesale-platform--romerojoelya.replit.app
-- Credenciales: https://drive.google.com/file/d/1FI_932e9UU-dHqA4TcE2mHI8A8WDARh0/view?usp=sharing
+- App: https://anthonyjoel.pythonanywhere.com
+- Credenciales: https://utpl-my.sharepoint.com/:t:/g/personal/lisaquisari_utpl_edu_ec/IQBwnWAGanohRYXDn8qrnF2oAQG9RKYzRfk33edtYkegYUQ?e=OfuTsF
 
 ## Compilar LaTeX
 
